@@ -2938,6 +2938,8 @@ sub func_run_model_chacterization_pipeline {
             fbamodel_output_id => undef
     } );
 
+    say 'params: ' . Dumper $params;
+
     $datachannel->{ fbamodel } //= $handler->util_get_object(
         Bio::KBase::utilities::buildref(
             $params->{ fbamodel_id },
@@ -2945,9 +2947,9 @@ sub func_run_model_chacterization_pipeline {
         )
     );
 
-    say Dumper $datachannel->{ fbamodel };
+    say 'fbamodel: ' . Dumper $datachannel->{ fbamodel };
 
-    my $datachannel_fbamodel_attributes = $datachannel->{ fbamodel }->attributes();
+    my $datachannel_fbamodel_attributes = $datachannel->{ fbamodel }->attributes;
 
     my $attributes = {
         pathways        => {},

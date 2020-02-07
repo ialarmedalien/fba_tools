@@ -1,4 +1,5 @@
 requires "Config::IniFiles";
+requires "Data::Dumper::Concise";
 requires "Template";
 requires "Template::Plugin::JSON";
 requires "Test::Most";

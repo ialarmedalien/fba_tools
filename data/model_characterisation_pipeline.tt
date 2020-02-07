@@ -3,7 +3,7 @@
 <head>
 	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-	<title>[% title %]</title>
+	<title>Metabolic Model Overview</title>
 	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap4.min.css">
 <!--
@@ -36,6 +36,7 @@
 </head>
 <body class="container">
 <div>
+    <h1>Metabolic Model Overview</h1>
 	<ul class="nav nav-tabs" id="nav-tab" role="tablist">
 		<li><a class="nav-item nav-link active" id="nav-model-tab" data-toggle="tab" href="#nav-model" role="tab" aria-controls="nav-model" aria-selected="true">Model Statistics</a> </li>
 		<li><a class="nav-item nav-link" id="nav-pathway-tab" data-toggle="tab" href="#nav-pathway" role="tab" aria-controls="nav-pathway" aria-selected="false">Pathway Statistics</a> </li>
@@ -48,7 +49,9 @@
 			</h3>
 <!-- Two column table with attribute labels in the left column and values in the right column. This table does not need to be sortable or searchable. Print to TSV might be nice.
 -->
-			[% attr = template_data.attributes; fbas = attr.fbas; %]
+[%  attr = template_data.attributes;
+    fbas = attr.fbas;
+%]
 			<table class="table table-striped table-bordered">
 				<tbody>
 					<tr>
@@ -147,171 +150,175 @@ This table should be searchable, sortable, and TSV printable. Rows should be com
 	</div>
 </div>
 <script>
-	$(document).ready(function() {
-	    "use strict";
-	[%  USE JSON;
-	    FOR cpd_id IN attr.auxotrophy.keys;
-	        attr.auxotrophy.$cpd_id.id = cpd_id;
-	    END;
-	%]
-	    var pathway = {
-	        data: [% attr.pathways.json %],
-	        cols: {
-	            class: {
-	                title: "Class",
-	                render: ( data, type, d, meta ) => {
-	                    return d.classes[ d.classes.length - 1 ]
-	                }
-	            },
-	            // pathway names
-	            name: {
-	                title: "Pathway",
-	                data:   d => d.name,
-	                render: ( data, type, d, meta ) => {
-	                    return type === 'display'
-	                    ? '<a href="https://www.kegg.jp/kegg-bin/show_pathway?map' + d.id + '">' + d.name + '</a>'
-	                    : d.name
-	                }
-	            },
-	            //  Reaction count: (total/functional/gapfilled)
-	            reactions: {
-	                title: "Reactions",
-	                render: ( data, type, d, meta ) => {
-	                    const total = d.functional_rxn + d.gapfilled_rxn + d.nonfunctional_rxn;
-	                    if ( type === 'display' ) {
-	                        return total
-	                        + "<br>(functional: " + d.functional_rxn
-	                        + "; gap-filled: " + d.gapfilled_rxn + ")"
-	                    }
-	                    return total
-	                },
-	            },
-	            //  Gene count: pathway.gene_count
-	            gene_count: {
-	                title: "Gene count",
-	                data:   d => d.gene_count
-	            },
-	            //  Genes per reaction
-	            genes_per_rxn: {
-	                title: "Average genes per reaction",
-	                render: ( data, type, d, meta ) => {
-	                    return type !== 'display'
-	                        ? d.average_genes_per_reaction
-	                        : d.average_genes_per_reaction + " (&sigma;: "
-	                            + d.stddev_genes_per_reaction
-	                            + ")"
-	                },
-	            },
-	            present: {
-	                title: "Present?",
-	                render: ( data, type, d, meta ) => {
-	                    return type === 'display'
-	                        ? d.is_present
-	                            ? "Yes"
-	                            : "No"
-	                        : d.is_present
-	                },
-	            },
-	            fraction_complete: {
-	                title: "Fraction complete",
-	                render: ( data, type, d, meta ) => {
-	                    const percentage = d.functional_rxn / d.pathway_size * 100;
-	                    return type === 'display'
-	                        ? d.functional_rxn + " / " + d.pathway_size +
-	                            " (" +
-	                                ( d.functional_rxn === 0
-	                                    ? 0
-	                                    : percentage.toFixed(1) + "%"
-	                                )
-                                + ")"
-	                        : d.functional_rxn / d.pathway_size
-	                }
-	            },
-	            //  Coverage: (only show if this key is present in the data)
-	            coverage: {
-	                title: "Coverage",
-	                data:   d => {
-	                    if ( d.average_coverage_per_reaction === 0 ) {
-	                        return 0;
-	                    }
-	                    return d.average_coverage_per_reaction
-	                        + " (&sigma;: " + d.stddev_coverage_per_reaction + ")"
-	                }
-	            }
-	        },
-	        colOrder: [
-	            "class",
-	            "name",
-	            "reactions",
-	            "gene_count",
-	            "genes_per_rxn",
-	            "present",
-	            "fraction_complete",
-	            "coverage",
-	        ],
-	    },
-	    auxotrophy = {
-	        data: [% attr.auxotrophy.json %],
-	        cols: {
-	            compound_name: {
-	                title: "Compound",
-	                data:   d => d.compound_name,
-	                render: ( data, type, d, meta ) => {
-	                    return type === 'display'
-	                        ? '<a href="http://modelseed.org/biochem/compounds/' + d.id + '">' + d.compound_name + '</a>'
-	                        :   d.compound_name;
-	                }
-	            },
-	            reactions_required: {
-	                title: "Reactions required",
-	                data:   d => d.reactions_required,
+$(document).ready(function() {
+    "use strict";
+[%  USE JSON;
+    FOR cpd_id IN attr.auxotrophy.keys;
+        attr.auxotrophy.$cpd_id.id = cpd_id;
+    END;
+%]
+    var pathway = {
+        data: [% attr.pathways.json %],
+        cols: {
+            class: {
+                title: "Class",
+                render: ( data, type, d, meta ) => {
+                    return d.classes[ d.classes.length - 1 ]
+                }
+            },
+            // pathway names
+            name: {
+                title: "Pathway",
+                data:   d => d.name,
+                render: ( data, type, d, meta ) => {
+                    return type === 'display'
+                    ? '<a href="https://www.kegg.jp/kegg-bin/show_pathway?map' + d.id + '">' + d.name + '</a>'
+                    : d.name
+                }
+            },
+            //  Reaction count: (total/functional/gapfilled)
+            reactions: {
+                title: "Reactions",
+                render: ( data, type, d, meta ) => {
+                    const total = d.functional_rxn + d.gapfilled_rxn + d.nonfunctional_rxn;
+                    if ( type === 'display' ) {
+                        return total
+                        + "<br>(functional: " + d.functional_rxn
+                        + "; gap-filled: " + d.gapfilled_rxn + ")"
+                    }
+                    return total
+                },
+            },
+            //  Gene count: pathway.gene_count
+            gene_count: {
+                title: "Gene count",
+                data:   d => d.gene_count
+            },
+            //  Genes per reaction
+            genes_per_rxn: {
+                title: "Average genes per reaction",
+                render: ( data, type, d, meta ) => {
+                    return type !== 'display'
+                        ? d.average_genes_per_reaction
+                        : d.average_genes_per_reaction + " (&sigma;: "
+                            + d.stddev_genes_per_reaction
+                            + ")"
+                },
+            },
+            present: {
+                title: "Present?",
+                render: ( data, type, d, meta ) => {
+                    return type === 'display'
+                        ? d.is_present
+                            ? "Yes"
+                            : "No"
+                        : d.is_present
+                },
+            },
+            fraction_complete: {
+                title: "Fraction complete",
+                render: ( data, type, d, meta ) => {
+                    const percentage = d.functional_rxn / d.pathway_size * 100;
+                    return type === 'display'
+                        ? d.functional_rxn + " / " + d.pathway_size +
+                            " (" +
+                                ( d.functional_rxn === 0
+                                    ? 0
+                                    : percentage.toFixed(1) + "%"
+                                )
+                            + ")"
+                        : d.functional_rxn / d.pathway_size
+                }
+            },
+            //  Coverage: (only show if this key is present in the data)
+            coverage: {
+                title: "Coverage",
+                data:   d => {
+                    if ( d.average_coverage_per_reaction === 0 ) {
+                        return 0;
+                    }
+                    return d.average_coverage_per_reaction
+                        + " (&sigma;: " + d.stddev_coverage_per_reaction + ")"
+                }
+            }
+        },
+        colOrder: [
+            "class",
+            "name",
+            "reactions",
+            "gene_count",
+            "genes_per_rxn",
+            "present",
+            "fraction_complete",
+            "coverage",
+        ],
+    },
+    auxotrophy = {
+        data: [% attr.auxotrophy.json %],
+        cols: {
+            compound_name: {
+                title: "Compound",
+                data:   d => d.compound_name,
+                render: ( data, type, d, meta ) => {
+                    return type === 'display'
+                        ? '<a href="http://modelseed.org/biochem/compounds/' + d.id + '">' + d.compound_name + '</a>'
+                        :   d.compound_name;
+                }
+            },
+            reactions_required: {
+                title: "Reactions required",
+                data:   d => d.reactions_required,
 
-	            },
-	            gapfilled_reactions: {
-	                title: "Gap-filled reactions",
-	                data:   d => d.gapfilled_reactions,
+            },
+            gapfilled_reactions: {
+                title: "Gap-filled reactions",
+                data:   d => d.gapfilled_reactions,
 
-	            },
-	            is_auxotrophic: {
-	                title: "Auxotrophic",
-	                data:   d => d.is_auxotrophic,
-	                render: ( data, type, d, meta ) => {
-	                    return type === 'display'
-	                        ? d.is_auxotrophic
-	                            ? "Yes"
-	                            : "No"
-	                        : d.is_auxotrophic
-	                }
-	            }
-	        },
-	        colOrder: [
-	            'compound_name',
-	            'reactions_required',
-	            'gapfilled_reactions',
-	            'is_auxotrophic',
-	        ],
-	    }
+            },
+            is_auxotrophic: {
+                title: "Auxotrophic",
+                data:   d => d.is_auxotrophic,
+                render: ( data, type, d, meta ) => {
+                    return type === 'display'
+                        ? d.is_auxotrophic
+                            ? "Yes"
+                            : "No"
+                        : d.is_auxotrophic
+                }
+            }
+        },
+        colOrder: [
+            'compound_name',
+            'reactions_required',
+            'gapfilled_reactions',
+            'is_auxotrophic',
+        ],
+    }
 
-	    $('#nav-tab a').on('click', function (e) {
-	      e.preventDefault()
-	      $(this).tab('show')
-	    })
+    $('#nav-tab a').on('click', function (e) {
+      e.preventDefault()
+      $(this).tab('show')
+    })
 
-	    $('a[data-toggle="tab"]').on( 'shown.bs.tab', function (e) {
-	        $.fn.dataTable.tables( {visible: true, api: true} ).columns.adjust();
-	    } );
+    $('a[data-toggle="tab"]').on( 'shown.bs.tab', function (e) {
+        $.fn.dataTable.tables( {visible: true, api: true} ).columns.adjust();
+    } );
 
-	    $('#table-pathway').DataTable( {
-	        data: Object.values( pathway.data ),
-	        columns: pathway.colOrder.map( e => pathway.cols[ e ] ),
-	    } );
+    $('#table-pathway').DataTable( {
+        buttons: [ 'copy', 'csv', 'excel' ],
+//        dom: "",
+        data: Object.values( pathway.data ),
+        columns: pathway.colOrder.map( e => pathway.cols[ e ] ),
+    } );
 
-	    $('#table-auxotrophy').DataTable( {
-	        data: Object.values( auxotrophy.data ),
-	        columns: auxotrophy.colOrder.map( e => auxotrophy.cols[ e ] ),
-	    } );
+    $('#table-auxotrophy').DataTable( {
+        buttons: [ 'copy', 'csv', 'excel' ],
+//        dom: "",
+        data: Object.values( auxotrophy.data ),
+        columns: auxotrophy.colOrder.map( e => auxotrophy.cols[ e ] ),
+    } );
 
-	} );
+} );
 </script>
 </body>
 </html>

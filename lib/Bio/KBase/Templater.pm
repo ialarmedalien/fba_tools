@@ -2,16 +2,17 @@ package Bio::KBase::Templater;
 
 use strict;
 use warnings;
-use Template;
+
 use JSON::MaybeXS;
+use Template;
 use Template::Plugin::JSON;
+use Try::Tiny;
 
 =head2 populate_template
 
 Given a template, $template_file, populate it with $template_data and send the
-output to $output. The
-
-
+output to $output. Very thin wrapper around Template::Toolkit's 'process' that
+includes TT object initialisation.
 
 Args:
 
@@ -23,7 +24,7 @@ $template       # input template; possible formats:
 $template_data  # data to use in the template (hashref; optional)
 
 $output         # where to write the output to; possible formats:
-                #   - filename (absolute or relative to OUTPUT_PATH)
+                #   - filename (absolute)
                 #   - open file GLOB
                 #   - reference to a scalar variable to append output to
                 #   - reference to a sub which is called with output as a param
@@ -32,14 +33,16 @@ $output         # where to write the output to; possible formats:
 $arguments      # optional arguments to set binmode or IO layer (e.g. utf8)
 
 
-returns $output, the populated template
+Returns:
+
+$output, the populated template
 
 =cut
 
 sub populate_template {
     my ( $template, $template_data, $output, $arguments ) = @_;
 
-    my $config  = template_config();
+    my $config  = template_config() // { TRIM => 1 };
     my $tt      = Template->new( $config )
         or die $Template::ERROR . "\n";
 

@@ -6,7 +6,7 @@ use Time::HiRes qw(time);
 use Bio::KBase::utilities;
 use Bio::KBase::kbaseenv;
 use fba_tools::fba_toolsImpl;
-use KBaseReport::KBaseReportImpl;
+# use KBaseReport::KBaseReportImpl;
 
 my $tester = LocalTester->new($ENV{'KB_DEPLOYMENT_CONFIG'});
 $tester->run_tests();
@@ -79,7 +79,7 @@ $tester->run_tests();
 			$self->{testoutput}->{$name}->{function} = 1;
 			if (defined($fail_to_pass) && $fail_to_pass == 1) {
 				$self->{testoutput}->{$name}->{pass} = 0;
-				$self->{testoutput}->{$name}->{status} = $name." worked, but should have failed!"; 
+				$self->{testoutput}->{$name}->{status} = $name." worked, but should have failed!";
 				ok $self->{testoutput}->{$name}->{pass} == 1, $self->{testoutput}->{$name}->{status};
 			} else {
 				ok 1, $name." worked as expected!";
@@ -88,7 +88,7 @@ $tester->run_tests();
 					$tests->[$i]->[2] = eval $tests->[$i]->[0];
 					if ($tests->[$i]->[2] == 0) {
 						$self->{testoutput}->{$name}->{pass} = 0;
-						$self->{testoutput}->{$name}->{status} = $name." worked, but sub-tests failed!"; 
+						$self->{testoutput}->{$name}->{status} = $name." worked, but sub-tests failed!";
 					}
 					ok $tests->[$i]->[2] == 1, $tests->[$i]->[1];
 				}
@@ -114,7 +114,7 @@ $tester->run_tests();
 	}
 	sub run_tests {
 		my($self) = @_;
-		
+
 		my $output = $self->test_harness("sbml_file_to_model",{
 			model_file => {path => "/Users/chenry/workspace/KBaseDemo/iMR1_799.xml"},
 	        model_name => "iMR1_799",
@@ -123,7 +123,7 @@ $tester->run_tests();
 	        biomass => ["SO_BIOMASSMACRO_DM_NOATP2"]
 		},"import model from SBML",[],0,undef);
 		exit();
-		
+
 		my $output = $self->test_harness("edit_media",{
 			workspace => "chenry:1454960620516",
 			media_output_id => "edit_media_test",
@@ -148,7 +148,7 @@ $tester->run_tests();
 	        compounds_file => {path => "/Users/chenry/temp/SBW25Compounds.txt"}
 		},"import model from tsv",[],0,undef);
 		exit;
-		
+
 		my $output = $self->test_harness("tsv_file_to_model",{
 			model_file => {path => "/Users/chenry/temp/RhodoReactions.tsv"},
 	        model_name => "tsv_import",
@@ -158,11 +158,11 @@ $tester->run_tests();
 	        compounds_file => {path => "/Users/chenry/temp/RhodoCompounds.tsv"}
 		},"import model from tsv",[],0,undef);
 		exit;
-		
-		
+
+
 		#my $wsname = "chenry:1456989658583";
 		my $wsname = "chenry:1454960620516";
-		
+
 		my $output = $self->test_harness("edit_metabolic_model",{
 			workspace => "chenry:1454960620516",
 			fbamodel_id => "New211586.9.gf",
@@ -242,7 +242,7 @@ $tester->run_tests();
 	    	fbamodel_output_id => "New211586.9.edited"
 		},"editing a metabolic model",[],0,undef);
 		exit();
-		
+
 		my $output = $self->test_harness("sbml_file_to_model",{
 			model_file => {path => "/Users/chenry/Downloads/pFluorescens.xml"},
 	        model_name => "iSB1139",
@@ -251,7 +251,7 @@ $tester->run_tests();
 	        biomass => ["GROWTH"]
 		},"import model from SBML",[],0,undef);
 		exit();
-		
+
 		my $output = $self->test_harness("sbml_file_to_model",{
 			model_file => {path => "/Users/chenry/workspace/Metabolite repair/iPS189.xml"},
 	        model_name => "iPS189",
@@ -272,7 +272,7 @@ $tester->run_tests();
 	        compounds_file => {path => "/Users/chenry/temp/Syn3_0_compounds.tsv"}
 		},"import model from SBML",[],0,undef);
 		exit();
-		
+
 		my $output = $self->test_harness("run_flux_balance_analysis",{
 	        "fbamodel_id"=> "test_model_minimal",
 	        "media_id"=> "Carbon-D-Glucose",
@@ -297,9 +297,9 @@ $tester->run_tests();
 	        "max_o_uptake"=> undef,
 	        workspace => "chenry:1482435841726"
 	    },"Run flux balance analysis",[],0,undef);
-		
+
 		exit;
-		
+
 		$output = $self->test_harness("export_phenotype_set_as_tsv_file",{
 			input_ref => "chenry:1454960620516/shewy_phenotypes"
 		},"export phenotypes as tsv",[],0,undef);
@@ -350,12 +350,12 @@ $tester->run_tests();
 		},"import media from excel",[],0,undef);
 		$output = $self->test_harness("export_media_as_tsv_file",{
 			input_ref => "chenry:1454960620516/test_media"
-		},"export media as tsv",[],0,undef);		
+		},"export media as tsv",[],0,undef);
 		$output = $self->test_harness("tsv_file_to_media",{
 			media_file => {path => "/Users/chenry/temp/test_media.tsv"},
 	        media_name => "tsv_media",
 	        workspace_name => "chenry:1454960620516",
-		},"import media from tsv",[],0,undef);		
+		},"import media from tsv",[],0,undef);
 		$output = $self->test_harness("media_to_tsv_file",{
 			media_name => "test_media",
 			workspace_name => "chenry:1454960620516"
@@ -429,7 +429,7 @@ $tester->run_tests();
 			fbamodel_output_id => "new_genome_model",
 			workspace => $wsname,
 			gapfill_model => 0,
-		},"initial draft model reconstruction",[],0,undef);		
+		},"initial draft model reconstruction",[],0,undef);
 		$output = $self->test_harness("build_metabolic_model",{
 			genome_id => "Shewanella_amazonensis_SB2B",
 			genome_workspace => $wsname,
@@ -488,7 +488,7 @@ $tester->run_tests();
 			exp_threshold_percentile => 0.5,
 			exp_threshold_margin => 0.1,
 			activation_coefficient => 0.1
-		},"expression-based flux balance analysis in complete media",[],0,"initial draft model reconstruction with built-in expression-based gapfilling in complete media");		
+		},"expression-based flux balance analysis in complete media",[],0,"initial draft model reconstruction with built-in expression-based gapfilling in complete media");
 		$output = $self->test_harness("propagate_model_to_new_genome",{
 			fbamodel_id => "iMR1_799",
 			fbamodel_workspace => $wsname,
@@ -513,7 +513,7 @@ $tester->run_tests();
 			exp_threshold_percentile => 0.5,
 			exp_threshold_margin => 0.1,
 			activation_coefficient => 0.1
-		},"expression-based gapfilling of published model in complete media",[],0,"propagating published shewanella model to new genome with built in minimal media gapfilling");		
+		},"expression-based gapfilling of published model in complete media",[],0,"propagating published shewanella model to new genome with built in minimal media gapfilling");
 		$output = $self->test_harness("run_flux_balance_analysis",{
 			fbamodel_id => "iMR1_799",
 			fbamodel_workspace => $wsname,
@@ -531,7 +531,7 @@ $tester->run_tests();
 			exp_threshold_percentile => 0.5,
 			exp_threshold_margin => 0.1,
 			activation_coefficient => 0.1
-		},"expression-based flux balance analysis of published model in complete media",[],0,"propagating published shewanella model to new genome with built in minimal media gapfilling");		
+		},"expression-based flux balance analysis of published model in complete media",[],0,"propagating published shewanella model to new genome with built in minimal media gapfilling");
 		$output = $self->test_harness("simulate_growth_on_phenotype_data",{
 			fbamodel_id => "translated_SB2B_gapfilled_model",
 			phenotypeset_id => "shewy_phenotypes",
@@ -544,7 +544,7 @@ $tester->run_tests();
 			fbamodel_output_id => "Community_model",
 			workspace => $wsname,
 			mixed_bag_model => 1
-		},"merging draft and propated model into community model",[],0,"propagating published shewanella model to new genome with built in minimal media gapfilling");		
+		},"merging draft and propated model into community model",[],0,"propagating published shewanella model to new genome with built in minimal media gapfilling");
 		$output = $self->test_harness("gapfill_metabolic_model",{
 			fbamodel_id => "Community_model",
 			target_reaction => "bio1",
@@ -552,7 +552,7 @@ $tester->run_tests();
 			media_workspace => $wsname,
 			fbamodel_output_id => "gapfilled_community_model",
 			workspace => $wsname,
-		},"gapfilling community model in minimal media",[],0,"merging draft and propated model into community model");		
+		},"gapfilling community model in minimal media",[],0,"merging draft and propated model into community model");
 		$output = $self->test_harness("run_flux_balance_analysis",{
 			fbamodel_id => "Community_model",
 			target_reaction => "bio1",
@@ -565,7 +565,7 @@ $tester->run_tests();
 			simulate_ko => 0,
 			find_min_media => 0,
 			all_reversible => 0,
-		},"running flux balance analysis in minimal media with community model",[],0,"gapfilling community model in minimal media");		
+		},"running flux balance analysis in minimal media with community model",[],0,"gapfilling community model in minimal media");
 		$output = $self->test_harness("compare_fba_solutions",{
 			fba_id_list => ["iMR1799_exp_fba","draft_complete_gapfill_fba"],
 			fbacomparison_output_id => "fba_comparison",
