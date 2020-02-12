@@ -9,7 +9,7 @@
 # Date of module creation: 2014-01-4
 ########################################################################
 
-=head1 Bio::KBase::ObjectAPI::KBaseStore 
+=head1 Bio::KBase::ObjectAPI::KBaseStore
 
 Class for managing KBase object retreival from KBase
 
@@ -47,7 +47,8 @@ Client or server class for accessing a KBase workspace
 package Bio::KBase::ObjectAPI::KBaseStore;
 use Moose;
 use Bio::KBase::ObjectAPI::utilities;
-use Data::Dumper;
+use Ref::Util qw( is_arrayref );
+use Data::Dumper::Concise;
 use Class::Autouse qw(
 	Bio::KBase::kbaseenv
 	Bio::KBase::utilities
@@ -112,7 +113,7 @@ sub is_a_cache_target {
 		return 1;
 	}
 	return 0;
-} 
+}
 
 sub ref_to_identity {
 	my ($self,$ref) = @_;
@@ -335,6 +336,7 @@ sub get_objects {
 		refreshcache => 0,
 		raw => 0
 	});
+
 	#Checking cache for objects
 	my $newrefs = [];
 	for (my $i=0; $i < @{$refs}; $i++) {
@@ -380,14 +382,22 @@ sub get_objects {
 	for (my $i=0; $i < @{$refs}; $i++) {
 		my $array = [split(/;/,$refs->[$i])];
 		my $finalref = pop(@{$array});
-		$objs->[$i] = $self->cache()->{$finalref};
+		$objs->[$i] = $self->cache()->{ $finalref };
 	}
+
 	return $objs;
 }
 
 sub get_object {
 	my ($self,$ref,$options) = @_;
-	return $self->get_objects([$ref],$options)->[0];
+
+	my $result = $self->get_objects( [ $ref ], $options );
+
+    return $result->[ 0 ] if defined $result && is_arrayref( $result );
+
+    warn 'get object failed! returning undef';
+
+    return undef;
 }
 
 sub get_object_by_handle {
@@ -430,7 +440,7 @@ sub save_objects {
 			$objdata->{data} = $obj->{object};
 		} else {
 			$objdata->{type} = $obj->{object}->_type();
-			$objdata->{data} = $obj->{object}->serializeToDB();	
+			$objdata->{data} = $obj->{object}->serializeToDB();
 		}
 		if (defined($obj->{hidden})) {
 			$objdata->{hidden} = $obj->{hidden};
@@ -517,7 +527,7 @@ sub save_objects {
 			});
 		} else {
 			$listout = Bio::KBase::kbaseenv::save_objects($input);
-		}		
+		}
 		#Placing output into a hash of references pointing to object infos
 		for (my $i=0; $i < @{$listout}; $i++) {
 			$self->cache()->{$listout->[$i]->[6]."/".$listout->[$i]->[0]."/".$listout->[$i]->[4]} = $refobjhash->{$wsdata->{$ws}->{refs}->[$i]}->{object};

@@ -2,7 +2,7 @@ package fba_tools::fba_toolsImpl;
 use strict;
 use Bio::KBase::Exceptions;
 # Use Semantic Versioning (2.0.0-rc.1)
-# http://semver.org 
+# http://semver.org
 our $VERSION = '1.7.8';
 our $GIT_URL = 'ssh://git@github.com/cshenry/fba_tools.git';
 our $GIT_COMMIT_HASH = 'e348a4f9023ef30cec3b8044d98a615e1627ce28';
@@ -47,24 +47,38 @@ sub util_initialize_call {
 }
 
 sub util_finalize_call {
-	my ($self,$params) = @_;
-	$params = Bio::KBase::utilities::args($params,["workspace","report_name"],{
-		output => {},
-		direct_html_link_index => undef,
-	});
-	if ((!defined(Bio::KBase::utilities::report_html()) || length(Bio::KBase::utilities::report_html()) == 0) && defined(Bio::KBase::utilities::report_message()) && length(Bio::KBase::utilities::report_message()) > 0) {
-		Bio::KBase::utilities::print_report_message({message => "<p>".Bio::KBase::utilities::report_message()."</p>",append => 1,html => 1});
-	}
-	my $reportout = Bio::KBase::kbaseenv::create_report({
-    	workspace_name => $params->{workspace},
-    	report_object_name => $params->{report_name},
-    	direct_html_link_index => $params->{direct_html_link_index}
-    });
-    $params->{output}->{report_ref} = $reportout->{"ref"};
-	$params->{output}->{report_name} = $params->{report_name};
-	if (defined($params->{output}->{new_fbamodel})) {
-		delete $params->{output}->{new_fbamodel};
-	}
+    my ( $self, $params ) = @_;
+
+    $params = Bio::KBase::utilities::args(
+        $params,
+        [ "workspace", "report_name" ],
+        {
+            output                  => {},
+            direct_html_link_index  => undef,
+        }
+    );
+
+    my $report_html    = Bio::KBase::utilities::report_html()    // "";
+    my $report_message = Bio::KBase::utilities::report_message() // "";
+
+    Bio::KBase::utilities::print_report_message( {
+        message => "<p>" . $report_message . "</p>",
+        append  => 1,
+        html    => 1,
+    } ) if length $report_message && ! length $report_html;
+
+    my $report = Bio::KBase::kbaseenv::create_report( {
+        workspace_name         => $params->{ workspace },
+        report_object_name     => $params->{ report_name },
+        direct_html_link_index => $params->{ direct_html_link_index },
+    } );
+    $params->{ output }{ report_ref }  = $report->{ ref };
+    $params->{ output }{ report_name } = $params->{ report_name };
+
+    delete $params->{ output }{ new_fbamodel };
+
+    return $params;
+
 }
 
 sub util_store {
@@ -121,9 +135,9 @@ sub util_file_to_shock {
 sub util_get_file_path {
 	my($self,$file,$target_dir) = @_;
     if(exists $file->{shock_id} && $file->{shock_id} ne "") {
-        # file has a shock id, so try to fetch it 
+        # file has a shock id, so try to fetch it
         my $dataUtil = Bio::KBase::kbaseenv::data_file_client();
-        my $f = $dataUtil->shock_to_file({ 
+        my $f = $dataUtil->shock_to_file({
 			shock_id=>$file->{shock_id},
 			file_path=>$target_dir,
 			unpack=>0
@@ -237,7 +251,7 @@ sub util_parse_excel {
     }else{
     	require "Spreadsheet/ParseExcel.pm";
 		$excel = Spreadsheet::ParseExcel->new();
-    }	
+    }
 
     my $workbook = $excel->parse($filename);
     if(!defined $workbook){
@@ -263,14 +277,14 @@ sub util_parse_excel {
 		    }
 		    $File .= join("\t",@$rowData)."\n";
 		}
-	
+
 		$Filename.="_".$sheet->{Name};
 		$Filename.="_".join("",localtime()).".txt";
-	
+
 		open(OUT, "> $Filename");
 		print OUT $File;
 		close(OUT);
-	
+
 		$sheets->{$sheet->{Name}}=$Filename;
     }
     return $sheets;
@@ -281,8 +295,7 @@ sub util_parse_excel {
 sub new
 {
     my($class, @args) = @_;
-    my $self = {
-    };
+    my $self = {};
     bless $self, $class;
     #BEGIN_CONSTRUCTOR
     Bio::KBase::utilities::read_config({
@@ -550,13 +563,15 @@ sub characterize_genome_metabolism_using_model
     my $ctx = $fba_tools::fba_toolsServer::CallContext;
     my($return);
     #BEGIN characterize_genome_metabolism_using_model
-    $params = $self->util_initialize_call($params,$ctx);
-	$return = Bio::KBase::ObjectAPI::functions::func_model_based_genome_characterization($params);
-	$self->util_finalize_call({
-		output => $return,
-		workspace => $params->{workspace},
-		report_name => $params->{fbamodel_output_id}.".report",
-	});
+
+    $params = $self->util_initialize_call( $params, $ctx );
+    $return = Bio::KBase::ObjectAPI::functions::func_model_based_genome_characterization( $params );
+    $self->util_finalize_call( {
+        output      => $return,
+        workspace   => $params->{ workspace},
+        report_name => $params->{ fbamodel_output_id } . ".report",
+    } );
+
     #END characterize_genome_metabolism_using_model
     my @_bad_returns;
     (ref($return) eq 'HASH') or push(@_bad_returns, "Invalid type for return variable \"return\" (value was \"$return\")");
@@ -647,13 +662,15 @@ sub run_model_characterization
     my $ctx = $fba_tools::fba_toolsServer::CallContext;
     my($return);
     #BEGIN run_model_characterization
-    $params = $self->util_initialize_call($params,$ctx);
-	$return = Bio::KBase::ObjectAPI::functions::func_run_model_chacterization_pipeline($params);
-	$self->util_finalize_call({
-		output => $return,
-		workspace => $params->{workspace},
-		report_name => $params->{fbamodel_output_id}.".report",
-	});
+    $params = $self->util_initialize_call( $params, $ctx );
+    $return = Bio::KBase::ObjectAPI::functions::func_run_model_chacterization_pipeline( $params );
+
+    $self->util_finalize_call( {
+        output      => $return,
+        workspace   => $params->{ workspace },
+        report_name => $params->{ fbamodel_output_id } . ".report",
+    } );
+
     #END run_model_characterization
     my @_bad_returns;
     (ref($return) eq 'HASH') or push(@_bad_returns, "Invalid type for return variable \"return\" (value was \"$return\")");
@@ -5554,7 +5571,7 @@ sub run_fba_tools_tests
 
 
 
-=head2 status 
+=head2 status
 
   $return = $obj->status()
 

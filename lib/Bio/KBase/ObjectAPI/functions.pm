@@ -1,11 +1,14 @@
 package Bio::KBase::ObjectAPI::functions;
+use Test::Most;
 use strict;
 use warnings;
+use Try::Tiny;
 use POSIX;
-use Data::Dumper;
+use Data::Dumper::Concise;
 use Data::UUID;
 use Bio::KBase::utilities;
 use Bio::KBase::constants;
+use XML::DOM;
 
 our $handler;#Needs: log(string),save_object,get_object
 
@@ -58,7 +61,7 @@ sub util_build_fba {
 		expression_matrix => undef,
 		probanno => undef,
 		source_model => undef,
-		
+
 		target_reaction => "bio1",
 		thermodynamic_constraints => 0,
 		fva => 0,
@@ -77,7 +80,7 @@ sub util_build_fba {
 		steady_state_protein_fba => 0,
 		dynamic_fba => 0,
 		atp_production_check => 1,
-		
+
 		media_id_list => [],
 		feature_ko_list => [],
 		reaction_ko_list => [],
@@ -92,14 +95,14 @@ sub util_build_fba {
 		turnovers => undef,
 		kprimes => undef,
 		kmvalues => undef,
-		
+
 		expression_condition => undef,
 		metabolite_condition => undef,
 		exometabolite_condition => undef,
 		characteristic_flux_file => undef,
 		input_gene_parameter_file => undef,
 		input_reaction_parameter_file => undef,
-		
+
 		omega => 0,
 		activation_coefficient => 0,
 		exp_threshold_margin => 0.5,
@@ -131,7 +134,7 @@ sub util_build_fba {
 
 		notes => undef,
 	}, $params);
-	
+
 	#Making sure reaction KO list is an array
 	if (defined($params->{reaction_ko_list}) && ref($params->{reaction_ko_list}) ne "ARRAY") {
 		if (length($params->{reaction_ko_list}) > 0) {
@@ -274,7 +277,7 @@ sub util_build_fba {
 		}
 	}
 	$fbaobj->parent($handler->util_store());
-	
+
 	my $bio = $params->{model}->getObject("biomasses",$params->{target_reaction});
 	if (defined($bio)) {
 		$fbaobj->biomassflux_objterms()->{$bio->id()} = 1;
@@ -369,7 +372,7 @@ sub util_build_fba {
 		}
 		$fbaobj->PrepareForGapfilling($input);
 	}
-	
+
 	if (defined($params->{expression_matrix})) {
 		#$exphash = util_build_expression_hash($exp_matrix,$params->{expression_condition});
 		$fbaobj->process_expression_data({
@@ -407,7 +410,7 @@ sub util_build_fba {
 	} elsif (defined($params->{exometabolite_peak_string})) {
 		$fbaobj->parameters()->{"Exometabolite peak data"} = $params->{exometabolite_peak_string};
 	}
-	
+
 	if (defined($params->{input_gene_parameter_file})) {
 		my $file = Bio::KBase::ObjectAPI::utilities::LOADFILE($params->{input_gene_parameter_file});
 		my $headers = [split(/\t/,$file->[0])];
@@ -807,7 +810,7 @@ sub func_gapfill_metabolic_model {
 	}
 	my $gapfillnum = 0;
 	if (defined($fba->gapfillingSolutions()->[0]->{gapfillingSolutionReactions})) {
-		$gapfillnum = @{$fba->gapfillingSolutions()->[0]->{gapfillingSolutionReactions}};	
+		$gapfillnum = @{$fba->gapfillingSolutions()->[0]->{gapfillingSolutionReactions}};
 	}
 	$handler->util_log("Saving gapfilled model.");
 	# If the model is saved in the workspace, add it to the genome reference path
@@ -886,7 +889,7 @@ sub func_gapfill_metabolic_model {
 			$template_hash->{exodata} = Bio::KBase::ObjectAPI::utilities::TOJSON($exodata);
 			$template_hash->{tabone} = '<li class="active"><a href="#tab-table1" data-toggle="tab">Exometabolite results</a></li>';
 			$template_hash->{divone} = '<div class="tab-pane active" id="tab-table1"><table id="example" class="display" width="100%"></table></div>';
-		}	
+		}
 		if (defined($output->{met})) {
 			my $metadata = [];
 			$template_hash->{intradata} = Bio::KBase::ObjectAPI::utilities::TOJSON($metadata);
@@ -2208,7 +2211,7 @@ sub func_baseline_gapfilling {
 	#Determine how many reactions were gapfilled and what reactions were gapfilled
 	$datachannel->{fbamodel}->attributes()->{baseline_gapfilling} = 0;
 	if (defined($fba->gapfillingSolutions()->[0]->{gapfillingSolutionReactions})) {
-		$datachannel->{fbamodel}->attributes()->{baseline_gapfilling} = @{$fba->gapfillingSolutions()->[0]->{gapfillingSolutionReactions}};	
+		$datachannel->{fbamodel}->attributes()->{baseline_gapfilling} = @{$fba->gapfillingSolutions()->[0]->{gapfillingSolutionReactions}};
 	}
 	return $fba->gapfillingSolutions()->[0];
 }
@@ -2932,6 +2935,7 @@ sub func_build_metagenome_metabolic_model {
 
 sub func_model_based_genome_characterization {
 	my ($params,$datachannel) = @_;
+
 	$params = Bio::KBase::utilities::args($params,["workspace","genome_id"],{
 		fbamodel_output_id => $params->{genome_id}.".mdl",
 		template_id => "auto",
@@ -2941,6 +2945,9 @@ sub func_model_based_genome_characterization {
         merge_all_annotations => 0,
         source_ontology_list => []
 	});
+
+    warn "before func_build_metabolic_model";
+
 	Bio::KBase::ObjectAPI::functions::func_build_metabolic_model({
 		workspace => $params->{workspace},
 		genome_id => $params->{genome_id},
@@ -2955,123 +2962,235 @@ sub func_model_based_genome_characterization {
         source_ontology_list => $params->{source_ontology_list},
         add_auxotrophy_transporters => 1
 	},$datachannel);
+
+    warn "before func_run_model_chacterization_pipeline";
+
 	return Bio::KBase::ObjectAPI::functions::func_run_model_chacterization_pipeline({
 		workspace => $params->{workspace},
 		fbamodel_id => $params->{fbamodel_output_id}.".base",
 		fbamodel_output_id => $params->{fbamodel_output_id},
-	},$datachannel); 
-}	
+	},$datachannel);
+}
 
 sub func_run_model_chacterization_pipeline {
 	my ($params,$datachannel) = @_;
+
 	$params = Bio::KBase::utilities::args($params,["workspace","fbamodel_id"],{
 		fbamodel_workspace => $params->{workspace},
 		fbamodel_output_id => undef
 	});
-	if (!defined($datachannel->{fbamodel})) {
-		$datachannel->{fbamodel} = $handler->util_get_object(Bio::KBase::utilities::buildref($params->{fbamodel_id},$params->{fbamodel_workspace}));
-	}
-	my $attributes = {
-		pathways => {},
-		auxotrophy => {},
-		fbas => {},
-		gene_count => 0,
-		auxotroph_count => 0
-	};
-	if (defined($datachannel->{fbamodel}->attributes()->{base_atp})) {
-		$attributes->{base_atp} = $datachannel->{fbamodel}->attributes()->{base_atp};
-		$attributes->{initial_atp} = $datachannel->{fbamodel}->attributes()->{initial_atp};
-		$attributes->{base_rejected_reactions} = $datachannel->{fbamodel}->attributes()->{base_rejected_reactions};
-		$attributes->{core_gapfilling} = $datachannel->{fbamodel}->attributes()->{core_gapfilling};
-	}
-	if (!defined($params->{fbamodel_output_id})) {
-		$params->{fbamodel_output_id} = $datachannel->{fbamodel}->id();
-	}
-	my $auxo_output = Bio::KBase::ObjectAPI::functions::func_predict_auxotrophy_from_model({
-		workspace => $params->{workspace},
-		fbamodel_id => $params->{fbamodel_output_id}.".base",
-	},$datachannel);
-	$attributes->{baseline_gapfilling} = $datachannel->{fbamodel}->attributes()->{baseline_gapfilling};
-	$datachannel->{fbamodel}->parent()->cache({});
-	delete $datachannel->{fbamodel};
-	my $gapfill_output = Bio::KBase::ObjectAPI::functions::func_gapfill_metabolic_model({
-		workspace => $params->{workspace},
-		fbamodel_id => $params->{fbamodel_output_id}.".base",
-		media_id => $params->{fbamodel_output_id}.".base".".auxo_media",
-		fbamodel_output_id => $params->{fbamodel_output_id}.".gapfilled"
-	},$datachannel);
-	$attributes->{auxotrophy_gapfilling} = $gapfill_output->{number_gapfilled_reactions};
-	my $fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis({
-		workspace => $params->{workspace},
-		fbamodel_id => $params->{fbamodel_output_id}.".gapfilled",
-		fba_output_id => $params->{fbamodel_output_id}.".fba",
-		media_id => $params->{fbamodel_output_id}.".base".".auxo_media",
-		fva => 1,
-		minimize_flux => 1,
-		max_c_uptake => 30
-	},$datachannel);	
-	$attributes->{fbas}->{auxomedia}->{biomass} = $fba_output->{objective}+0;
-	$attributes->{fbas}->{auxomedia}->{fba_ref} = $datachannel->{fba}->_reference();
-	$attributes->{fbas}->{auxomedia}->{Blocked} = 0;
-	$attributes->{fbas}->{auxomedia}->{Negative} = 0;
-	$attributes->{fbas}->{auxomedia}->{Positive} = 0;
-	$attributes->{fbas}->{auxomedia}->{Variable} = 0;
-	$attributes->{fbas}->{auxomedia}->{PositiveVariable} = 0;
-	$attributes->{fbas}->{auxomedia}->{NegativeVariable} = 0;
-	my $rxnvar = $datachannel->{fba}->FBAReactionVariables();
-	my $classhash = {};
-	for (my $i=0; $i < @{$rxnvar}; $i++) {
-		if ($rxnvar->[$i]->modelreaction_ref() =~ m/(rxn\d+)/) {
-			$classhash->{$1}->{auxo} = $rxnvar->[$i]->{class};
-		}
-		$rxnvar->[$i]->{class} =~ s/\sv/V/;
-		$attributes->{fbas}->{auxomedia}->{$rxnvar->[$i]->{class}}++;
-	}
-	$fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis({
-		workspace => $params->{workspace},
-		fbamodel_id => $params->{fbamodel_output_id}.".gapfilled",
-		fba_output_id => $params->{fbamodel_output_id}.".fba",
-		fva => 1,
-		minimize_flux => 1,
-		max_c_uptake => 30
-	},$datachannel);		
-	$attributes->{fbas}->{complete}->{biomass} = $fba_output->{objective}+0;
-	$attributes->{fbas}->{complete}->{fba_ref} = $datachannel->{fba}->_reference();
-	$attributes->{fbas}->{complete}->{Blocked} = 0;
-	$attributes->{fbas}->{complete}->{Negative} = 0;
-	$attributes->{fbas}->{complete}->{Positive} = 0;
-	$attributes->{fbas}->{complete}->{PositiveVariable} = 0;
-	$attributes->{fbas}->{complete}->{NegativeVariable} = 0;
-	$attributes->{fbas}->{complete}->{Variable} = 0;
-	$rxnvar = $datachannel->{fba}->FBAReactionVariables();
-	for (my $i=0; $i < @{$rxnvar}; $i++) {
-		if ($rxnvar->[$i]->modelreaction_ref() =~ m/(rxn\d+)/) {
-			$classhash->{$1}->{comp} = $rxnvar->[$i]->{class};
-		}
-		$rxnvar->[$i]->{class} =~ s/\sv/V/;
-		$attributes->{fbas}->{complete}->{$rxnvar->[$i]->{class}}++;
-	}
-	$attributes->{gene_count} = @{$datachannel->{fbamodel}->features()};
-	$datachannel->{fbamodel}->ComputePathwayAttributes($classhash);
-	$attributes->{pathways} = $datachannel->{fbamodel}->attributes()->{pathways};
-	foreach my $cpd (keys(%{$auxo_output->{auxotrophy_data}})) {
-		$attributes->{auxotrophy}->{$cpd} = {
-			compound_name => $auxo_output->{auxotrophy_data}->{$cpd}->{name},
-			reactions_required => $auxo_output->{auxotrophy_data}->{$cpd}->{totalrxn},
-			gapfilled_reactions => $auxo_output->{auxotrophy_data}->{$cpd}->{gfrxn},
-			is_auxotrophic => $auxo_output->{auxotrophy_data}->{$cpd}->{auxotrophic}	
-		};
-		if ($auxo_output->{auxotrophy_data}->{$cpd}->{auxotrophic} == 1) {
-			$attributes->{auxotroph_count}++;
-		}
-	}
-	$datachannel->{fbamodel}->attributes($attributes);
-	my $wsmeta = $handler->util_save_object($datachannel->{fbamodel},Bio::KBase::utilities::buildref($params->{fbamodel_output_id}.".gapfilled",$params->{workspace}));
-	Bio::KBase::utilities::print_report_message({message => "<p>Model-based characterization of input genome complete. Examine model JSON file attributes values for output.</p>",append => 0,html => 1});
-	return {
-		new_fbamodel_ref => $datachannel->{fbamodel}->_wsworkspace()."/".$datachannel->{fbamodel}->_wswsid(),
-		new_fba_ref => $datachannel->{fba}->_wsworkspace()."/".$datachannel->{fba}->_wswsid()
-	};
+
+    warn 'datachannel prior to fbamodel checks: ' . Dumper $datachannel;
+
+    $datachannel->{ fbamodel } //= $handler->util_get_object(
+        Bio::KBase::utilities::buildref(
+            $params->{ fbamodel_id }, $params->{ fbamodel_workspace }
+        )
+    );
+
+    $Data::Dumper::Maxdepth = 4;
+
+    my $attributes = {
+        pathways        => {},
+        auxotrophy      => {},
+        fbas            => {},
+        gene_count      => 0,
+        auxotroph_count => 0,
+    };
+
+    if ( defined $datachannel->{ fbamodel }->attributes->{ base_atp } ) {
+
+        $attributes->{ $_ } = $datachannel->{ fbamodel }->attributes->{ $_ }
+            for qw( base_atp initial_atp base_rejected_reactions core_gapfilling );
+
+    }
+
+    $params->{ fbamodel_output_id } //= $datachannel->{ fbamodel }->id;
+
+    warn 'before func_predict_auxotrophy_from_model: '
+        . Dumper {
+#            datachannel => $datachannel,
+        };
+
+    my $auxo_output = Bio::KBase::ObjectAPI::functions::func_predict_auxotrophy_from_model( {
+        workspace   => $params->{ workspace },
+        fbamodel_id => $params->{ fbamodel_output_id } . ".base",
+    }, $datachannel );
+
+    warn 'after func_predict_auxotrophy_from_model: '
+        . Dumper {
+#            datachannel => $datachannel,
+            auxo_output => $auxo_output,
+        };
+
+    $attributes->{ baseline_gapfilling }
+        = $datachannel->{ fbamodel }->attributes->{ baseline_gapfilling };
+
+    $datachannel->{ fbamodel }->parent()->cache( {} );
+    delete $datachannel->{ fbamodel };
+
+    warn 'before func_gapfill_metabolic_model: '
+        . Dumper {
+#            datachannel => $datachannel,
+            attributes  => $attributes,
+        };
+
+    my $gapfill_output = Bio::KBase::ObjectAPI::functions::func_gapfill_metabolic_model( {
+        workspace           => $params->{ workspace },
+        fbamodel_id         => $params->{ fbamodel_output_id } . ".base",
+        media_id            => $params->{ fbamodel_output_id } . ".base.auxo_media",
+        fbamodel_output_id  => $params->{ fbamodel_output_id } . ".gapfilled",
+    }, $datachannel );
+
+    warn 'after func_gapfill_metabolic_model: '
+        . Dumper {
+            attributes => $attributes,
+            gapfill    => $gapfill_output,
+        };
+
+    $attributes->{ auxotrophy_gapfilling } = $gapfill_output->{ number_gapfilled_reactions };
+
+    warn 'before func_run_flux_balance_analysis';
+
+    my $auxo_fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis( {
+        workspace       => $params->{ workspace },
+        fbamodel_id     => $params->{ fbamodel_output_id } . ".gapfilled",
+        fba_output_id   => $params->{ fbamodel_output_id } . ".fba",
+        media_id        => $params->{ fbamodel_output_id } . ".base.auxo_media",
+        fva             => 1,
+        minimize_flux   => 1,
+        max_c_uptake    => 30,
+    }, $datachannel );
+
+    warn 'after func_run_flux_balance_analysis: '
+        . Dumper {
+            attributes      => $attributes,
+            auxo_fba_output => $auxo_fba_output,
+        };
+
+    my @fba_default_zero = qw(
+        Blocked
+        Negative
+        Positive
+        Variable
+        PositiveVariable
+        NegativeVariable
+    );
+
+    my $ref = $datachannel->{ fba }->_reference;
+
+    $attributes->{ fbas }{ auxomedia } = {
+        biomass => $auxo_fba_output->{ objective } + 0,
+        fba_ref => "$ref",
+        ( map { $_ => 0 } @fba_default_zero ),
+    };
+
+    my $auxo_fba_reaction_variables = $datachannel->{ fba }->FBAReactionVariables();
+    my $reaction_classes;
+
+    for my $reaction ( @$auxo_fba_reaction_variables ) {
+        my $reaction_class = $reaction->{ class };
+        if ( $reaction->modelreaction_ref =~ m/(rxn\d+)/ ) {
+            $reaction_classes->{ $1 }{ auxo } = $reaction_class;
+        }
+        $reaction_class =~ s/\sv/V/;
+        $attributes->{ fbas }{ auxomedia }{ $reaction_class }++;
+    }
+
+    warn 'before func_run_flux_balance_analysis II: '
+        . Dumper {
+#            datachannel => $datachannel,
+        };
+
+    my $complete_fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis( {
+            workspace     => $params->{ workspace },
+            fbamodel_id   => $params->{ fbamodel_output_id } . ".gapfilled",
+            fba_output_id => $params->{ fbamodel_output_id } . ".fba",
+            fva           => 1,
+            minimize_flux => 1,
+            max_c_uptake  => 30
+    }, $datachannel );
+
+    warn 'after func_run_flux_balance_analysis II: '
+        . Dumper {
+            attributes => $attributes,
+            fba_output => $complete_fba_output,
+        };
+
+    $ref = $datachannel->{ fba }->_reference;
+    $attributes->{ fbas }{ complete } = {
+        biomass => $complete_fba_output->{ objective } + 0,
+        fba_ref => "$ref",
+        ( map { $_ => 0 } @fba_default_zero ),
+    };
+
+    my $complete_fba_reaction_variables = $datachannel->{ fba }->FBAReactionVariables();
+
+    for my $reaction ( @$complete_fba_reaction_variables ) {
+        my $reaction_class = $reaction->{ class };
+        if ( $reaction->modelreaction_ref =~ m/(rxn\d+)/ ) {
+            $reaction_classes->{ $1 }{ comp } = $reaction_class;
+        }
+        $reaction_class =~ s/\sv/V/;
+        $attributes->{ fbas }{ complete }{ $reaction_class }++;
+    }
+
+    $datachannel->{ fbamodel }->ComputePathwayAttributes( $reaction_classes );
+
+    $attributes->{ gene_count } = @{ $datachannel->{ fbamodel }->features };
+    $attributes->{ pathways }   = $datachannel->{ fbamodel }->attributes->{ pathways };
+
+    my $auxotrophy_data = $auxo_output->{ auxotrophy_data };
+
+    for my $cpd ( keys %$auxotrophy_data ) {
+
+        $attributes->{ auxotrophy }{ $cpd } = {
+            compound_name       => $auxotrophy_data->{ $cpd }{ name },
+            reactions_required  => $auxotrophy_data->{ $cpd }{ totalrxn },
+            gapfilled_reactions => $auxotrophy_data->{ $cpd }{ gfrxn },
+            is_auxotrophic      => $auxotrophy_data->{ $cpd }{ auxotrophic },
+        };
+
+        $attributes->{ auxotroph_count }++
+            if $auxotrophy_data->{ $cpd }{ auxotrophic } == 1;
+
+    }
+
+    $datachannel->{ fbamodel }->attributes( $attributes );
+
+    warn 'before print_report_message: '
+        . Dumper {
+            attributes  => $attributes,
+        };
+
+    my $wsmeta = $handler->util_save_object(
+        $datachannel->{ fbamodel },
+        Bio::KBase::utilities::buildref(
+            $params->{ fbamodel_output_id } . ".gapfilled",
+            $params->{ workspace }
+        )
+    );
+
+    #     Bio::KBase::Templater::render_template(
+    #         template    => '',
+    #         data        => $datachannel->{ fbamodel },
+    #
+    #     );
+    Bio::KBase::utilities::print_report_message( {
+        message =>
+            "<p>Model-based characterization of input genome complete. "
+            . "Examine model JSON file attributes values for output.</p>",
+        append  => 0,
+        html    => 1,
+    } );
+
+    my $fbamodel = $datachannel->{ fbamodel };
+
+    return {
+        new_fbamodel_ref    => $fbamodel->_wsworkspace . "/" . $fbamodel->_wswsid,
+        new_fba_ref         => $fbamodel->_wsworkspace . "/" . $fbamodel->_wswsid,
+    };
+
 }
 
 sub func_create_or_edit_media {
@@ -3268,7 +3387,7 @@ sub func_run_pickaxe {
 		$datachannel->{metabolomics_data} = {
 			formula_to_peaks => {},
 			inchikey_to_peaks => {},
-			smiles_to_peaks => {} 
+			smiles_to_peaks => {}
 		};
 		if (defined($params->{metabolomics_data})) {
 			my $data;
@@ -3353,7 +3472,7 @@ sub func_run_pickaxe {
 				} else {
 					$input_compounds_with_structure++;
 					push(@{$input_model_array},$cpd->{id}."\t".$cpd->{smiles});
-					$datachannel->{smileshash}->{$cpd->{smiles}}->{model}->{$cpd->{id}} = $cpd;					
+					$datachannel->{smileshash}->{$cpd->{smiles}}->{model}->{$cpd->{id}} = $cpd;
 				}
 			}
 	    } else {
@@ -3493,7 +3612,7 @@ sub func_run_pickaxe {
     					my $formula = $array->[3];
     					my $type = "pickax";
     					$formula =~ s/(\+|-)\d*$//;#Removing formula charge
-		    			#Check if the ID already exists in the output model	
+		    			#Check if the ID already exists in the output model
 		    			if (defined($datachannel->{fbamodel}->getObject("modelcompounds",$original_id))) {
 		    				next;#Do nothing... compound is already in output
 		    			#Check if the ID is in the input model submitted to start the app
@@ -3591,7 +3710,7 @@ sub func_run_pickaxe {
 			    			$datachannel->{fbamodel}->add("modelcompound",$cpddata);
 						#Checking that the generated compound if a metabolomics hit
     						Bio::KBase::ObjectAPI::functions::check_for_peakmatch($datachannel->{metabolomics_data},$datachannel->{cpd_hits},$datachannel->{peak_hits},$cpddata,$datachannel->{currentgen},$ruleset,1);
-		    			}	
+		    			}
 		    		}
 		    		#Adding reactions to model
 		    		my $rxndarray = Bio::KBase::ObjectAPI::utilities::LOADFILE($rxnfilename);
@@ -3611,7 +3730,7 @@ sub func_run_pickaxe {
 		    				if (length($newequation) > 0) {
 	    						$newequation .= " ";
 	    					}
-		    				if (defined($cpdid_translation->{$eqarray->[$j]})) {	
+		    				if (defined($cpdid_translation->{$eqarray->[$j]})) {
 		    					$newequation .= $cpdid_translation->{$eqarray->[$j]};
 		    				} else {
 		    					$newequation .= $eqarray->[$j];
@@ -3629,7 +3748,7 @@ sub func_run_pickaxe {
 					$datachannel->{reaction_ids}->{$array->[5]}++;
 		    		}
 		    }
-	    }      
+	    }
 	    #If more generations are desired, call this function again recursively
 		if ($datachannel->{currentgen} < $params->{generation} && $cpdcount > 0) {
 			$output = Bio::KBase::ObjectAPI::functions::func_run_pickaxe($params,$datachannel);
@@ -4491,8 +4610,7 @@ sub func_importmodel {
 		print("Parseing SBML text\n");
 		$params->{compounds} = [];
 		$params->{reactions} = [];
-		require "XML/DOM.pm";
-		my $parser = new XML::DOM::Parser;
+		my $parser = XML::DOM::Parser->new;
 		my $doc = $parser->parse($params->{sbml});
 		#Parsing compartments
 		my $cmpts = [$doc->getElementsByTagName("compartment")];
@@ -5517,10 +5635,10 @@ sub check_for_peakmatch {
 					}
 					$peak_hit->{$ruleset}->{$generation}->{$peakid}->{$type}++;
 				}
-			}	
+			}
 		}
 	}
-	return $hit;	
+	return $hit;
 }
 
 1;

@@ -30,7 +30,7 @@ The Workspace Service (WSS) is primarily a language independent remote storage
 and retrieval system for KBase typed objects (TO) defined with the KBase
 Interface Description Language (KIDL). It has the following primary features:
 - Immutable storage of TOs with
-        - user defined metadata 
+        - user defined metadata
         - data provenance
 - Versioning of TOs
 - Referencing from TO to TO
@@ -45,7 +45,7 @@ Interface Description Language (KIDL). It has the following primary features:
 sub new
 {
     my($class, $url, @args) = @_;
-    
+
 
     my $self = {
 	client => Workspace::WorkspaceClient::RpcClient->new,
@@ -101,15 +101,15 @@ sub new
 	        $self->{token} = $token->token;
 	    }
 	}
-	
+
 	if (exists $self->{token})
 	{
 	    $self->{client}->{token} = $self->{token};
 	}
     }
 
-    my $ua = $self->{client}->ua;	 
-    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);	 
+    my $ua = $self->{client}->ua;
+    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);
     $ua->timeout($timeout);
     bless $self, $class;
     #    $self->_validate_version();
@@ -185,7 +185,7 @@ Returns the version of the workspace service.
 				       );
     }
 }
- 
+
 
 
 =head2 create_workspace
@@ -311,7 +311,7 @@ Creates a new workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 alter_workspace_metadata
@@ -411,7 +411,7 @@ Change the metadata associated with a workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 clone_workspace
@@ -569,7 +569,7 @@ Clones a workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 lock_workspace
@@ -644,7 +644,7 @@ Lock a workspace, preventing further changes.
 
         WARNING: Locking a workspace is permanent. A workspace, once locked,
         cannot be unlocked.
-        
+
         The only changes allowed for a locked workspace are changing user
         based permissions or making a private workspace globally readable,
         thus permanently publishing the workspace. A locked, globally readable
@@ -699,7 +699,7 @@ Lock a workspace, preventing further changes.
 				       );
     }
 }
- 
+
 
 
 =head2 get_workspacemeta
@@ -765,7 +765,7 @@ permission is a string
 =item Description
 
 Retrieves the metadata associated with the specified workspace.
-Provided for backwards compatibility. 
+Provided for backwards compatibility.
 @deprecated Workspace.get_workspace_info
 
 =back
@@ -817,7 +817,7 @@ Provided for backwards compatibility.
 				       );
     }
 }
- 
+
 
 
 =head2 get_workspace_info
@@ -939,7 +939,7 @@ Get information associated with a workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 get_workspace_description
@@ -1031,7 +1031,7 @@ Get a workspace's description.
 				       );
     }
 }
- 
+
 
 
 =head2 set_permissions
@@ -1129,7 +1129,7 @@ Set permissions for a workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 set_global_permission
@@ -1223,7 +1223,7 @@ Set the global permission for a workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 set_workspace_description
@@ -1315,7 +1315,7 @@ Set the description for a workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 get_permissions_mass
@@ -1419,7 +1419,7 @@ Get permissions for multiple workspaces.
 				       );
     }
 }
- 
+
 
 
 =head2 get_permissions
@@ -1516,7 +1516,7 @@ Get permissions for a workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 save_object
@@ -1656,7 +1656,7 @@ for backwards compatibility.
 				       );
     }
 }
- 
+
 
 
 =head2 save_objects
@@ -1879,7 +1879,7 @@ it.
 				       );
     }
 }
- 
+
 
 
 =head2 get_object
@@ -2021,7 +2021,7 @@ Provided for backwards compatibility.
 				       );
     }
 }
- 
+
 
 
 =head2 get_object_provenance
@@ -2268,7 +2268,7 @@ Get object provenance from the workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 get_objects
@@ -2518,7 +2518,7 @@ Get objects from the workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 get_objects2
@@ -2812,7 +2812,7 @@ Get objects from the workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 get_object_subset
@@ -3082,7 +3082,7 @@ original array.
 				       );
     }
 }
- 
+
 
 
 =head2 get_object_history
@@ -3223,7 +3223,7 @@ ignored.
 				       );
     }
 }
- 
+
 
 
 =head2 list_referencing_objects
@@ -3364,7 +3364,7 @@ in the deleted state are not returned.
 				       );
     }
 }
- 
+
 
 
 =head2 list_referencing_object_counts
@@ -3480,7 +3480,7 @@ inaccessible to the user.
 				       );
     }
 }
- 
+
 
 
 =head2 get_referenced_objects
@@ -3684,18 +3684,18 @@ DEPRECATED
         Get objects by references from other objects.
 
         NOTE: In the vast majority of cases, this method is not necessary and
-        get_objects should be used instead. 
-        
+        get_objects should be used instead.
+
         get_referenced_objects guarantees that a user that has access to an
         object can always see a) objects that are referenced inside the object
         and b) objects that are referenced in the object's provenance. This
         ensures that the user has visibility into the entire provenance of the
         object and the object's object dependencies (e.g. references).
-        
+
         The user must have at least read access to the first object in each
         reference chain, but need not have access to any further objects in
         the chain, and those objects may be deleted.
-        
+
         @deprecated Workspace.get_objects2
 
 =back
@@ -3747,7 +3747,7 @@ DEPRECATED
 				       );
     }
 }
- 
+
 
 
 =head2 list_workspaces
@@ -3867,7 +3867,7 @@ list_workspace_info
 				       );
     }
 }
- 
+
 
 
 =head2 list_workspace_info
@@ -4009,7 +4009,7 @@ List workspaces viewable by the user.
 				       );
     }
 }
- 
+
 
 
 =head2 list_workspace_objects
@@ -4146,7 +4146,7 @@ specified type (or with any type). Provided for backwards compatibility.
 				       );
     }
 }
- 
+
 
 
 =head2 list_objects
@@ -4314,7 +4314,7 @@ List objects in one or more workspaces.
 				       );
     }
 }
- 
+
 
 
 =head2 get_objectmeta
@@ -4450,7 +4450,7 @@ via the instance parameter. Provided for backwards compatibility.
 				       );
     }
 }
- 
+
 
 
 =head2 get_object_info
@@ -4603,7 +4603,7 @@ in the future.
 				       );
     }
 }
- 
+
 
 
 =head2 get_object_info_new
@@ -4791,7 +4791,7 @@ Get information about objects from the workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 get_object_info3
@@ -4983,7 +4983,7 @@ usermeta is a reference to a hash where the key is a string and the value is a s
 				       );
     }
 }
- 
+
 
 
 =head2 rename_workspace
@@ -5111,7 +5111,7 @@ Rename a workspace.
 				       );
     }
 }
- 
+
 
 
 =head2 rename_object
@@ -5257,7 +5257,7 @@ Rename an object. User meta data is always returned as null.
 				       );
     }
 }
- 
+
 
 
 =head2 copy_object
@@ -5403,7 +5403,7 @@ Copy an object. Returns the object_info for the newest version.
 				       );
     }
 }
- 
+
 
 
 =head2 revert_object
@@ -5546,7 +5546,7 @@ Revert an object.
 				       );
     }
 }
- 
+
 
 
 =head2 get_names_by_prefix
@@ -5658,7 +5658,7 @@ This function is intended for use as an autocomplete helper function.
 				       );
     }
 }
- 
+
 
 
 =head2 hide_objects
@@ -5766,7 +5766,7 @@ appear in the list_objects method.
 				       );
     }
 }
- 
+
 
 
 =head2 unhide_objects
@@ -5873,7 +5873,7 @@ of the version specified in the ObjectIdentity.
 				       );
     }
 }
- 
+
 
 
 =head2 delete_objects
@@ -5980,7 +5980,7 @@ the version specified in the ObjectIdentity.
 				       );
     }
 }
- 
+
 
 
 =head2 undelete_objects
@@ -6088,7 +6088,7 @@ deleted, no error is thrown.
 				       );
     }
 }
- 
+
 
 
 =head2 delete_workspace
@@ -6178,7 +6178,7 @@ Delete a workspace. All objects contained in the workspace are deleted.
 				       );
     }
 }
- 
+
 
 
 =head2 undelete_workspace
@@ -6270,7 +6270,7 @@ deleted.
 				       );
     }
 }
- 
+
 
 
 =head2 request_module_ownership
@@ -6353,7 +6353,7 @@ must approve the request.
 				       );
     }
 }
- 
+
 
 
 =head2 register_typespec
@@ -6468,7 +6468,7 @@ Also see the release_types function.
 				       );
     }
 }
- 
+
 
 
 =head2 register_typespec_copy
@@ -6566,7 +6566,7 @@ Also see the release_types function.
 				       );
     }
 }
- 
+
 
 
 =head2 release_module
@@ -6610,7 +6610,7 @@ two things to the module's types:
         backwards incompatible changes from minor version to minor version.
         Once a type is released, backwards incompatible changes always
         cause a major version increment.
-2) This version of the type becomes the default version, and if a 
+2) This version of the type becomes the default version, and if a
         specific version is not supplied in a function call, this version
         will be used. This means that newer, unreleased versions of the
         type may be skipped.
@@ -6664,7 +6664,7 @@ two things to the module's types:
 				       );
     }
 }
- 
+
 
 
 =head2 list_modules
@@ -6754,7 +6754,7 @@ List typespec modules.
 				       );
     }
 }
- 
+
 
 
 =head2 list_module_versions
@@ -6856,7 +6856,7 @@ List typespec module versions.
 				       );
     }
 }
- 
+
 
 
 =head2 get_module_info
@@ -6980,7 +6980,7 @@ boolean is an int
 				       );
     }
 }
- 
+
 
 
 =head2 get_jsonschema
@@ -7066,7 +7066,7 @@ Get JSON schema for a type.
 				       );
     }
 }
- 
+
 
 
 =head2 translate_from_MD5_types
@@ -7150,7 +7150,7 @@ Translation from types qualified with MD5 to their semantic versions
 				       );
     }
 }
- 
+
 
 
 =head2 translate_to_MD5_types
@@ -7234,7 +7234,7 @@ Translation from types qualified with semantic versions to their MD5'ed versions
 				       );
     }
 }
- 
+
 
 
 =head2 get_type_info
@@ -7350,7 +7350,7 @@ func_string is a string
 				       );
     }
 }
- 
+
 
 
 =head2 get_all_type_info
@@ -7468,7 +7468,7 @@ func_string is a string
 				       );
     }
 }
- 
+
 
 
 =head2 get_func_info
@@ -7576,7 +7576,7 @@ type_string is a string
 				       );
     }
 }
- 
+
 
 
 =head2 get_all_func_info
@@ -7686,7 +7686,7 @@ type_string is a string
 				       );
     }
 }
- 
+
 
 
 =head2 grant_module_ownership
@@ -7781,7 +7781,7 @@ module.
 				       );
     }
 }
- 
+
 
 
 =head2 remove_module_ownership
@@ -7872,7 +7872,7 @@ on the module.
 				       );
     }
 }
- 
+
 
 
 =head2 list_all_types
@@ -7968,7 +7968,7 @@ version.
 				       );
     }
 }
- 
+
 
 
 =head2 administer
@@ -8050,8 +8050,8 @@ The administration interface.
 				       );
     }
 }
- 
-  
+
+
 sub status
 {
     my($self, @args) = @_;
@@ -8081,7 +8081,7 @@ sub status
                        );
     }
 }
-   
+
 
 sub version {
     my ($self) = @_;
@@ -8596,8 +8596,8 @@ id has a value which is a Workspace.ws_id
 
 Meta data associated with a workspace. Provided for backwards
 compatibility. To be replaced by workspace_info.
-        
-ws_name id - name of the workspace 
+
+ws_name id - name of the workspace
 username owner - name of the user who owns (who created) this workspace
 timestamp moddate - date when the workspace was last modified
 int objects - the approximate number of objects currently stored in
@@ -8862,7 +8862,7 @@ Select an object by either:
         One, and only one, of the numerical id or name of the workspace.
                 ws_id wsid - the numerical ID of the workspace.
                 ws_name workspace - the name of the workspace.
-        AND 
+        AND
         One, and only one, of the numerical id or name of the object.
                 obj_id objid- the numerical ID of the object.
                 obj_name name - name of the object.
@@ -8957,7 +8957,7 @@ A chain of objects with references to one another as a string.
         dependency or provenance reference to the next object. Each entry is
         an obj_ref as defined earlier. Entries are separated by semicolons.
         Whitespace is ignored.
-        
+
         Examples:
         3/5/6; kbaseuser:myworkspace/myobject; 5/myobject/2
         aworkspace/6
@@ -8991,7 +8991,7 @@ a string
 
 =item Description
 
-A path into an object. 
+A path into an object.
 Identify a sub portion of an object by providing the path, delimited by
 a slash (/), to that portion of the object. Thus the path may not have
 slashes in the structure or mapping keys. Examples:
@@ -9002,7 +9002,7 @@ slashes in the structure or mapping keys. Examples:
         list mapped by the bar key in the map foo.
 /foo/asterisk/baz - specifies the baz field of all the objects in the
         values of the foo mapping. Swap 'asterisk' for * in the path.
-In case you need to use '/' or '~' in path items use JSON Pointer 
+In case you need to use '/' or '~' in path items use JSON Pointer
         notation defined here: http://tools.ietf.org/html/rfc6901
 
 
@@ -9037,13 +9037,13 @@ a string
 DEPRECATED
 
         An object subset identifier.
-        
+
         Select a subset of an object by:
         EITHER
                 One, and only one, of the numerical id or name of the workspace.
                         ws_id wsid - the numerical ID of the workspace.
                         ws_name workspace - name of the workspace.
-                AND 
+                AND
                 One, and only one, of the numerical id or name of the object.
                         obj_id objid- the numerical ID of the object.
                         obj_name name - name of the object.
@@ -9058,7 +9058,7 @@ DEPRECATED
                 specification traverses a non-existant map key (default false)
         boolean strict_arrays - if true, throw an exception if the subset
                 specification exceeds the size of an array (default true)
-                
+
         @deprecated Workspace.ObjectSpecification
 
 
@@ -9169,7 +9169,7 @@ boolean find_refence_path - This is the last, slowest, and most expensive resort
         succeeds, the object will be returned as normal. Note that the search
         will automatically fail after a certain (but much larger than necessary
         for the vast majority of cases) number of objects are traversed.
-        
+
 
 OBJECT SUBSETS:
 
@@ -9254,7 +9254,7 @@ strict_arrays has a value which is a Workspace.boolean
 
 Meta data associated with an object stored in a workspace. Provided for
 backwards compatibility.
-        
+
 obj_name id - name of the object.
 type_string type - type of the object.
 timestamp moddate - date when the object was saved
@@ -9469,15 +9469,15 @@ Information about a subaction that is invoked by a provenance action.
         calls are the same from PA to PA and so do not need to be listed in
         the provenance since providing information about the PA alone provides
         reproducibility.
-        
+
         In some cases, however, SAs may change over time, such that invoking
         the same PA with the same parameters may produce different results.
         For example, if a PA calls a remote server, that server may be updated
         between a PA invoked on day T and another PA invoked on day T+1.
-        
+
         The SubAction structure allows for specifying information about SAs
         that may dynamically change from PA invocation to PA invocation.
-        
+
         string name - the name of the SA.
         string ver - the version of SA.
         string code_url - a url pointing to the SA's codebase.
@@ -9533,16 +9533,16 @@ A provenance action.
         typically running a script, running an api command, etc. All of the
         following fields are optional, but more information provided equates to
         better data provenance.
-        
+
         resolved_ws_objects should never be set by the user; it is set by the
         workspace service when returning data.
-        
+
         On input, only one of the time or epoch may be supplied. Both are
         supplied on output.
-        
+
         The maximum size of the entire provenance object, including all actions,
         is 1MB.
-        
+
         timestamp time - the time the action was started
         epoch epoch - the time the action was started.
         string caller - the name or id of the invoker of this provenance
@@ -9564,10 +9564,10 @@ A provenance action.
                 were used as input to this action; typically these will also be
                 present as parts of the method_params or the script_command_line
                 arguments. A reference path into the object graph may be supplied.
-        list<obj_ref> resolved_ws_objects - the workspace objects ids from 
+        list<obj_ref> resolved_ws_objects - the workspace objects ids from
                 input_ws_objects resolved to permanent workspace object references
                 by the workspace service.
-        list<string> intermediate_incoming - if the previous action produced 
+        list<string> intermediate_incoming - if the previous action produced
                 output that 1) was not stored in a referrable way, and 2) is
                 used as input for this action, provide it with an arbitrary and
                 unique ID here, in the order of the input arguments to this action.
@@ -9658,7 +9658,7 @@ Input parameters for the "create_workspace" function.
 
         Required arguments:
         ws_name workspace - name of the workspace to be created.
-        
+
         Optional arguments:
         permission globalread - 'r' to set the new workspace globally readable,
                 default 'n'.
@@ -9763,7 +9763,7 @@ Input parameters for the "clone_workspace" function.
         WorkspaceIdentity wsi - the workspace to be cloned.
         ws_name workspace - name of the workspace to be cloned into. This must
                 be a non-existant workspace name.
-        
+
         Optional arguments:
         permission globalread - 'r' to set the new workspace globally readable,
                 default 'n'.
@@ -9827,12 +9827,12 @@ DEPRECATED
         One, and only one of:
         ws_name workspace - name of the workspace.
         ws_id id - the numerical ID of the workspace.
-                
+
         Optional arguments:
         string auth - the authentication token of the KBase account accessing
                 the workspace. Overrides the client provided authorization
                 credentials if they exist.
-        
+
         @deprecated Workspace.WorkspaceIdentity
 
 
@@ -9877,7 +9877,7 @@ Input parameters for the "set_permissions" function.
         One, and only one, of the following is required:
         ws_id id - the numerical ID of the workspace.
         ws_name workspace - the name of the workspace.
-        
+
         Required arguments:
         permission new_permission - the permission to assign to the users.
         list<username> users - the users whose permissions will be altered.
@@ -9926,7 +9926,7 @@ Input parameters for the "set_global_permission" function.
         One, and only one, of the following is required:
         ws_id id - the numerical ID of the workspace.
         ws_name workspace - the name of the workspace.
-        
+
         Required arguments:
         permission new_permission - the permission to assign to all users,
                 either 'n' or 'r'. 'r' means that all users will be able to read
@@ -9975,7 +9975,7 @@ Input parameters for the "set_workspace_description" function.
         One, and only one, of the following is required:
         ws_id id - the numerical ID of the workspace.
         ws_name workspace - the name of the workspace.
-        
+
         Optional arguments:
         string description - A free-text description of the workspace, 1000
                 characters max. Longer strings will be mercilessly and brutally
@@ -10093,7 +10093,7 @@ perms has a value which is a reference to a list where each element is a referen
 
 Input parameters for the "save_object" function. Provided for backwards
 compatibility.
-        
+
 Required arguments:
 type_string type - type of the object to be saved
 ws_name workspace - name of the workspace where the object is to be
@@ -10163,7 +10163,7 @@ An object and associated data required for saving.
         type_string type - the type of the object. Omit the version information
                 to use the latest version.
         UnspecifiedObject data - the object data.
-        
+
         Optional arguments:
         One of an object name or id. If no name or id is provided the name
                 will be set to 'auto' with the object id appended as a string,
@@ -10230,7 +10230,7 @@ Input parameters for the "save_objects" function.
         One, and only one, of the following is required:
         ws_id id - the numerical ID of the workspace.
         ws_name workspace - the name of the workspace.
-        
+
         Required arguments:
         list<ObjectSaveData> objects - the objects to save.
 
@@ -10273,7 +10273,7 @@ objects has a value which is a reference to a list where each element is a Works
 
 Input parameters for the "get_object" function. Provided for backwards
 compatibility.
-        
+
 Required arguments:
 ws_name workspace - Name of the workspace containing the object to be
         retrieved
@@ -10329,10 +10329,10 @@ auth has a value which is a string
 
 Output generated by the "get_object" function. Provided for backwards
 compatibility.
-        
+
 UnspecifiedObject data - The object's data.
 object_metadata metadata - Metadata for object retrieved/
-        
+
 @deprecated Workspaces.ObjectData
 
 
@@ -10397,7 +10397,7 @@ DEPRECATED
         string handle_error - if an error occurs while setting ACLs on
                 embedded handle IDs, it will be reported here.
         string handle_stacktrace - the stacktrace for handle_error.
-        
+
         @deprecated
 
 
@@ -10548,7 +10548,7 @@ Input parameters for the get_objects2 function.
         list<ObjectSpecification> objects - the list of object specifications
                 for the objects to return (via reference chain and as a subset if
                 specified).
-                
+
         Optional parameters:
         boolean ignoreErrors - Don't throw an exception if an object cannot
                 be accessed; return null for that object's information instead.
@@ -10771,7 +10771,7 @@ boolean showDeletedObject - show objects that have been deleted
 string auth - the authentication token of the KBase account requesting
         access. Overrides the client provided authorization credentials if
         they exist.
-        
+
 @deprecated Workspace.ListObjectsParams
 
 
@@ -10824,9 +10824,9 @@ Parameters for the 'list_objects' function.
                         version information will find any objects that match the provided
                         type - e.g. Foo.Bar-0 will match Foo.Bar-0.X where X is any
                         existing version.
-                
+
                 Only one of each timestamp/epoch pair may be supplied.
-                
+
                 Optional arguments:
                 permission perm - filter objects by minimum permission level. 'None'
                         and 'readable' are ignored.
@@ -10938,14 +10938,14 @@ Input parameters for the "get_objectmeta" function.
         ws_name workspace - name of the workspace containing the object for
                  which metadata is to be retrieved
         obj_name id - name of the object for which metadata is to be retrieved
-        
+
         Optional arguments:
         int instance - Version of the object for which metadata is to be
                  retrieved, enabling retrieval of any previous version of an object
         string auth - the authentication token of the KBase account requesting
                 access. Overrides the client provided authorization credentials if
                 they exist.
-                
+
         @deprecated Workspace.ObjectIdentity
 
 
@@ -10993,14 +10993,14 @@ Input parameters for the "get_object_info_new" function.
         list<ObjectSpecification> objects - the objects for which the
                 information should be fetched. Subsetting related parameters are
                 ignored.
-        
+
         Optional arguments:
         boolean includeMetadata - include the object metadata in the returned
                 information. Default false.
         boolean ignoreErrors - Don't throw an exception if an object cannot
                 be accessed; return null for that object's information instead.
                 Default false.
-                
+
         @deprecated Workspace.GetObjectInfo3Params
 
 
@@ -11046,7 +11046,7 @@ Input parameters for the "get_object_info3" function.
         list<ObjectSpecification> objects - the objects for which the
                 information should be fetched. Subsetting related parameters are
                 ignored.
-        
+
         Optional arguments:
         boolean includeMetadata - include the object metadata in the returned
                 information. Default false.
@@ -11214,15 +11214,15 @@ new_name has a value which is a Workspace.obj_name
 
 =item Description
 
-Input parameters for the 'copy_object' function. 
+Input parameters for the 'copy_object' function.
 
         If the 'from' ObjectIdentity includes no version and the object is
         copied to a new name, the entire version history of the object is
         copied. In all other cases only the version specified, or the latest
         version if no version is specified, is copied.
-        
+
         The version from the 'to' ObjectIdentity is always ignored.
-        
+
         Required arguments:
         ObjectIdentity from - the object to copy.
         ObjectIdentity to - where to copy the object.
@@ -11267,7 +11267,7 @@ Input parameters for the get_names_by_prefix function.
         Required arguments:
         list<WorkspaceIdentity> workspaces - the workspaces to search.
         string prefix - the prefix of the object names to return.
-        
+
         Optional arguments:
         boolean includeHidden - include names of hidden objects in the results.
                 Default false.
@@ -11441,7 +11441,7 @@ a string
 
 =item Description
 
-A version of a type. 
+A version of a type.
 Specifies the version of the type  in a single string in the format
 [major].[minor]:
 
@@ -11597,9 +11597,9 @@ Parameters for the register_typespec function.
         One of:
         typespec spec - the new typespec to register.
         modulename mod - the module to recompile with updated options (see below).
-        
+
         Optional arguments:
-        boolean dryrun - Return, but do not save, the results of compiling the 
+        boolean dryrun - Return, but do not save, the results of compiling the
                 spec. Default true. Set to false for making permanent changes.
         list<typename> new_types - types in the spec to make available in the
                 workspace service. When compiling a spec for the first time, if
@@ -11669,7 +11669,7 @@ Parameters for the register_typespec_copy function.
         string external_workspace_url - the URL of the  workspace server from
                 which to copy a typespec.
         modulename mod - the name of the module in the workspace server
-        
+
         Optional arguments:
         spec_version version - the version of the module in the workspace
                 server
@@ -11797,7 +11797,7 @@ A set of versions from a module.
         modulename mod - the name of the module.
         list<spec_version> - a set or subset of versions associated with the
                 module.
-        list<spec_version> - a set or subset of released versions associated 
+        list<spec_version> - a set or subset of released versions associated
                 with the module.
 
 
@@ -11841,7 +11841,7 @@ Parameters for the get_module_info function.
 
         Required arguments:
         modulename mod - the name of the module to retrieve.
-        
+
         Optional arguments:
         spec_version ver - the version of the module to retrieve. Defaults to
                 the latest version.
@@ -11889,7 +11889,7 @@ Information about a module.
         string description - the description of the module from the typespec.
         mapping<type_string, jsonschema> types - the types associated with this
                 module and their JSON schema.
-        mapping<modulename, spec_version> included_spec_version - names of 
+        mapping<modulename, spec_version> included_spec_version - names of
                 included modules associated with their versions.
         string chsum - the md5 checksum of the object.
         list<func_string> functions - list of names of functions registered in spec.
@@ -11951,20 +11951,20 @@ Information about a type
         string description - the description of the type from spec file.
         string spec_def - reconstruction of type definition from spec file.
         jsonschema json_schema - JSON schema of this type.
-        string parsing_structure - json document describing parsing structure of type 
+        string parsing_structure - json document describing parsing structure of type
                 in spec file including involved sub-types.
         list<spec_version> module_vers - versions of spec-files containing
                 given type version.
-        list<spec_version> released_module_vers - versions of released spec-files 
+        list<spec_version> released_module_vers - versions of released spec-files
                 containing given type version.
         list<type_string> type_vers - all versions of type with given type name.
-        list<type_string> released_type_vers - all released versions of type with 
+        list<type_string> released_type_vers - all released versions of type with
                 given type name.
         list<func_string> using_func_defs - list of functions (with versions)
                 referring to this type version.
         list<type_string> using_type_defs - list of types (with versions)
                 referring to this type version.
-        list<type_string> used_type_defs - list of types (with versions) 
+        list<type_string> used_type_defs - list of types (with versions)
                 referred from this type version.
 
 
@@ -12027,17 +12027,17 @@ Information about a function
         func_string func_def - resolved func definition id.
         string description - the description of the function from spec file.
         string spec_def - reconstruction of function definition from spec file.
-        string parsing_structure - json document describing parsing structure of function 
+        string parsing_structure - json document describing parsing structure of function
                 in spec file including types of arguments.
         list<spec_version> module_vers - versions of spec files containing
                 given func version.
-        list<spec_version> released_module_vers - released versions of spec files 
+        list<spec_version> released_module_vers - released versions of spec files
                 containing given func version.
         list<func_string> func_vers - all versions of function with given type
                 name.
-        list<func_string> released_func_vers - all released versions of function 
+        list<func_string> released_func_vers - all released versions of function
                 with given type name.
-        list<type_string> used_type_defs - list of types (with versions) 
+        list<type_string> used_type_defs - list of types (with versions)
                 referred to from this function version.
 
 
@@ -12216,6 +12216,8 @@ package Workspace::WorkspaceClient::RpcClient;
 use base 'JSON::RPC::Client';
 use POSIX;
 use strict;
+use warnings;
+use Carp qw( croak );
 
 #
 # Override JSON::RPC::Client::call because it doesn't handle error returns properly.
@@ -12223,41 +12225,36 @@ use strict;
 
 sub call {
     my ($self, $uri, $headers, $obj) = @_;
+
     my $result;
 
-
-    {
-	if ($uri =~ /\?/) {
-	    $result = $self->_get($uri);
-	}
-	else {
-	    Carp::croak "not hashref." unless (ref $obj eq 'HASH');
-	    $result = $self->_post($uri, $headers, $obj);
-	}
-
-    }
-
-    my $service = $obj->{method} =~ /^system\./ if ( $obj );
-
-    $self->status_line($result->status_line);
-
-    if ($result->is_success) {
-
-        return unless($result->content); # notification?
-
-        if ($service) {
-            return JSON::RPC::ServiceObject->new($result, $self->json);
-        }
-
-        return JSON::RPC::ReturnObject->new($result, $self->json);
-    }
-    elsif ($result->content_type eq 'application/json')
-    {
-        return JSON::RPC::ReturnObject->new($result, $self->json);
+    if ( $uri =~ /\?/ ) {
+        $result = $self->_get( $uri );
     }
     else {
-        return;
+        croak "object is not a hashref; it is a " . ( ref( $obj ) || 'SCALAR' )
+            unless ref $obj eq 'HASH';
+        $result = $self->_post( $uri, $headers, $obj );
     }
+
+    my $service = $obj->{ method } =~ /^system\./ if ( $obj );
+
+    $self->status_line( $result->status_line );
+
+    if ( $result->is_success ) {
+
+        return unless $result->content; # notification?
+
+        return JSON::RPC::ServiceObject->new( $result, $self->json ) if $service;
+
+#        return JSON::RPC::ReturnObject->new( $result, $self->json );
+    }
+
+    return JSON::RPC::ReturnObject->new( $result, $self->json )
+        if $result->content_type eq 'application/json';
+
+    return;
+
 }
 
 
@@ -12265,32 +12262,31 @@ sub _post {
     my ($self, $uri, $headers, $obj) = @_;
     my $json = $self->json;
 
-    $obj->{version} ||= $self->{version} || '1.1';
+    $obj->{ version } ||= $self->{ version } || '1.1';
 
-    if ($obj->{version} eq '1.0') {
-        delete $obj->{version};
-        if (exists $obj->{id}) {
-            $self->id($obj->{id}) if ($obj->{id}); # if undef, it is notification.
+    if ( $obj->{ version } eq '1.0') {
+        delete $obj->{ version };
+        if ( exists $obj->{ id } ) {
+            $self->id( $obj->{ id } ) if $obj->{ id }; # if undef, it is notification.
         }
         else {
-            $obj->{id} = $self->id || ($self->id('JSON::RPC::Client'));
+            $obj->{ id } = $self->id || ( $self->id( 'JSON::RPC::Client' ) );
         }
     }
     else {
-        # $obj->{id} = $self->id if (defined $self->id);
-	# Assign a random number to the id if one hasn't been set
-	$obj->{id} = (defined $self->id) ? $self->id : substr(rand(),2);
+        # Assign a random number to the id if one hasn't been set
+        $obj->{ id } = $self->id // substr( rand(), 2 );
     }
 
-    my $content = $json->encode($obj);
+    my $content = $json->encode( $obj );
 
     $self->ua->post(
         $uri,
-        Content_Type   => $self->{content_type},
+        Content_Type   => $self->{ content_type },
         Content        => $content,
         Accept         => 'application/json',
-	@$headers,
-	($self->{token} ? (Authorization => $self->{token}) : ()),
+        @$headers,
+        ( $self->{token} ? ( Authorization => $self->{token} ) : () ),
     );
 }
 

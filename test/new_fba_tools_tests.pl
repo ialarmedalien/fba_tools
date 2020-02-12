@@ -1,5 +1,7 @@
 use strict;
-use Data::Dumper;
+use warnings;
+use feature qw( say );
+use Data::Dumper::Concise;
 use Test::More;
 use Test::Exception;
 use Config::Simple;
@@ -14,7 +16,7 @@ Bio::KBase::ObjectAPI::functions::set_handler($impl);
 my $test_ws = "fba_tools_unittests";
 $test_ws = "chenry:narrative_1504151898593";
 
-my $start = 16;
+my $start = 15;
 if (defined($ARGV[0])) {
 	$start = $ARGV[0];
 }
@@ -184,7 +186,7 @@ if ($start < 14) {
 
 if ($start < 15) {
 	print "Running test 14:\n";
-	lives_ok{	
+	lives_ok{
 		my $output = Bio::KBase::ObjectAPI::functions::func_gapfill_metabolic_model({
 		 "omindirectional" => 0,
 		 "reaction_ko_list" => "",
@@ -204,7 +206,26 @@ if ($start < 15) {
 
 if ($start < 16) {
 	print "Running test 15:\n";
-	lives_ok{	
+
+# 	lives_ok {
+#
+#         my $params = {
+#           fbamodel_id => "Escherichia_coli.mdl.base",
+#           fbamodel_output_id => "Escherichia_coli.mdl",
+#           fbamodel_workspace => "chenry:narrative_1504151898593",
+#           workspace => "chenry:narrative_1504151898593",
+#         };
+#
+#         my $ref = Bio::KBase::utilities::buildref(
+#             $params->{ fbamodel_id }, $params->{ fbamodel_workspace }
+#         );
+#         warn 'ref: ' . Dumper $ref;
+#
+#         my $object = $impl->util_get_object( $ref );
+# 	    say Dumper $object;
+# 	} 'successfully got object!';
+
+	lives_ok{
 		$impl->characterize_genome_metabolism_using_model({
 			workspace => $test_ws,
 			genome_id => "Escherichia_coli"
@@ -212,18 +233,19 @@ if ($start < 16) {
 	} "characterize_genome_metabolism_using_model";
 }
 
+done_testing();
+exit();
+
+
 if ($start < 17) {
 	print "Running test 16:\n";
-	lives_ok{	
+	lives_ok{
 		$impl->build_metagenome_metabolic_model({
 			workspace => $test_ws,
 			input_ref => "test_metagenome_annotation"
 		});
 	} "build_metagenome_metabolic_model";
 }
-
-done_testing();
-exit();
 
 if ($start < 18) {
 	print "Running test 17:\n";

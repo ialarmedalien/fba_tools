@@ -1,12 +1,13 @@
 language: perl
 perl:
-- 5.16.3
+- 5.18.2
 sudo: required
 services:
 - docker
 before_install:
 - cpanm -n Devel::Cover::Report::Coveralls
 install:
+- cpanm --installdeps .
 - docker pull kbase/kb-sdk
 - docker run kbase/kb-sdk genscript > $HOME/bin/kb-sdk
 - chmod 755 $HOME/bin/kb-sdk
