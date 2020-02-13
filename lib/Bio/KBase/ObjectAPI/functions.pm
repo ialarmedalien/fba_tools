@@ -9,8 +9,27 @@ use Data::UUID;
 use Bio::KBase::utilities;
 use Bio::KBase::constants;
 use XML::DOM;
+use Bio::KBase::Templater qw( render_template );
+use JSON::MaybeXS;
+use Path::Tiny;
+use Scalar::Util qw( blessed );
 
 our $handler;#Needs: log(string),save_object,get_object
+
+sub dump_json {
+    my ( $data, $name ) = @_;
+
+    my $jsonifier = JSON::MaybeXS->new( utf8 => 1, allow_blessed => 1, convert_blessed => 1 );
+
+    my $outfile = '/kb/module/work/' . $name . '.json';
+
+    open my $out, '>', $outfile or die 'Cannot open ' . $outfile . ' for writing: ' . $!;
+
+    print { $out } $jsonifier->encode( $data );
+
+    return;
+
+}
 
 sub set_handler {
 	my ($input_handler) = @_;
@@ -2963,16 +2982,192 @@ sub func_model_based_genome_characterization {
         add_auxotrophy_transporters => 1
 	},$datachannel);
 
+    use Storable qw ( dclone );
     warn "before func_run_model_chacterization_pipeline";
 
-	return Bio::KBase::ObjectAPI::functions::func_run_model_chacterization_pipeline({
+    my $alt_params      = dclone $params;
+    my $alt_datachannel = defined $datachannel ? dclone $datachannel : undef;
+
+	my $results = Bio::KBase::ObjectAPI::functions::func_run_model_chacterization_pipeline({
 		workspace => $params->{workspace},
 		fbamodel_id => $params->{fbamodel_output_id}.".base",
 		fbamodel_output_id => $params->{fbamodel_output_id},
 	},$datachannel);
+
+	my $alt_results = Bio::KBase::ObjectAPI::functions::func_run_model_characterization_pipeline({
+		workspace => $alt_params->{workspace},
+		fbamodel_id => $alt_params->{fbamodel_output_id}.".base",
+		fbamodel_output_id => $alt_params->{fbamodel_output_id},
+	},$alt_datachannel);
+
+    cmp_deeply
+        $results,
+        $alt_results,
+        'results and alt_results are identical'
+        or diag explain {
+            results => $results,
+            alt_results => $alt_results,
+        };
+
+    cmp_deeply
+        $params,
+        $alt_params,
+        'params and alt_params are identical',
+        or diag explain {
+            params => $params,
+            alt_params => $alt_params,
+        };
+
+    cmp_deeply
+        $datachannel,
+        $alt_datachannel,
+        'datachannel has not changed'
+        or diag explain {
+            datachannel     => $datachannel,
+            alt_datachannel => $alt_datachannel,
+        };
+
+    return $results;
+
 }
 
 sub func_run_model_chacterization_pipeline {
+	my ($params,$datachannel) = @_;
+	$params = Bio::KBase::utilities::args($params,["workspace","fbamodel_id"],{
+		fbamodel_workspace => $params->{workspace},
+		fbamodel_output_id => undef
+	});
+	if (!defined($datachannel->{fbamodel})) {
+		$datachannel->{fbamodel} = $handler->util_get_object(Bio::KBase::utilities::buildref($params->{fbamodel_id},$params->{fbamodel_workspace}));
+	}
+	my $attributes = {
+		pathways => {},
+		auxotrophy => {},
+		fbas => {},
+		gene_count => 0,
+		auxotroph_count => 0
+	};
+	if (defined($datachannel->{fbamodel}->attributes()->{base_atp})) {
+		$attributes->{base_atp} = $datachannel->{fbamodel}->attributes()->{base_atp};
+		$attributes->{initial_atp} = $datachannel->{fbamodel}->attributes()->{initial_atp};
+		$attributes->{base_rejected_reactions} = $datachannel->{fbamodel}->attributes()->{base_rejected_reactions};
+		$attributes->{core_gapfilling} = $datachannel->{fbamodel}->attributes()->{core_gapfilling};
+	}
+	if (!defined($params->{fbamodel_output_id})) {
+		$params->{fbamodel_output_id} = $datachannel->{fbamodel}->id();
+	}
+	my $auxo_output = Bio::KBase::ObjectAPI::functions::func_predict_auxotrophy_from_model({
+		workspace => $params->{workspace},
+		fbamodel_id => $params->{fbamodel_output_id}.".base",
+	},$datachannel);
+	$attributes->{baseline_gapfilling} = $datachannel->{fbamodel}->attributes()->{baseline_gapfilling};
+	$datachannel->{fbamodel}->parent()->cache({});
+	delete $datachannel->{fbamodel};
+	my $gapfill_output = Bio::KBase::ObjectAPI::functions::func_gapfill_metabolic_model({
+		workspace => $params->{workspace},
+		fbamodel_id => $params->{fbamodel_output_id}.".base",
+		media_id => $params->{fbamodel_output_id}.".base".".auxo_media",
+		fbamodel_output_id => $params->{fbamodel_output_id}.".gapfilled"
+	},$datachannel);
+	$attributes->{auxotrophy_gapfilling} = $gapfill_output->{number_gapfilled_reactions};
+	my $fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis({
+		workspace => $params->{workspace},
+		fbamodel_id => $params->{fbamodel_output_id}.".gapfilled",
+		fba_output_id => $params->{fbamodel_output_id}.".fba",
+		media_id => $params->{fbamodel_output_id}.".base".".auxo_media",
+		fva => 1,
+		minimize_flux => 1,
+		max_c_uptake => 30
+	},$datachannel);
+	$attributes->{fbas}->{auxomedia}->{biomass} = $fba_output->{objective}+0;
+	$attributes->{fbas}->{auxomedia}->{fba_ref} = $datachannel->{fba}->_reference();
+	$attributes->{fbas}->{auxomedia}->{Blocked} = 0;
+	$attributes->{fbas}->{auxomedia}->{Negative} = 0;
+	$attributes->{fbas}->{auxomedia}->{Positive} = 0;
+	$attributes->{fbas}->{auxomedia}->{Variable} = 0;
+	$attributes->{fbas}->{auxomedia}->{PositiveVariable} = 0;
+	$attributes->{fbas}->{auxomedia}->{NegativeVariable} = 0;
+	my $rxnvar = $datachannel->{fba}->FBAReactionVariables();
+	my $classhash = {};
+	for (my $i=0; $i < @{$rxnvar}; $i++) {
+		if ($rxnvar->[$i]->modelreaction_ref() =~ m/(rxn\d+)/) {
+			$classhash->{$1}->{auxo} = $rxnvar->[$i]->{class};
+		}
+		$rxnvar->[$i]->{class} =~ s/\sv/V/;
+		$attributes->{fbas}->{auxomedia}->{$rxnvar->[$i]->{class}}++;
+	}
+	$fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis({
+		workspace => $params->{workspace},
+		fbamodel_id => $params->{fbamodel_output_id}.".gapfilled",
+		fba_output_id => $params->{fbamodel_output_id}.".fba",
+		fva => 1,
+		minimize_flux => 1,
+		max_c_uptake => 30
+	},$datachannel);
+	$attributes->{fbas}->{complete}->{biomass} = $fba_output->{objective}+0;
+	$attributes->{fbas}->{complete}->{fba_ref} = $datachannel->{fba}->_reference();
+	$attributes->{fbas}->{complete}->{Blocked} = 0;
+	$attributes->{fbas}->{complete}->{Negative} = 0;
+	$attributes->{fbas}->{complete}->{Positive} = 0;
+	$attributes->{fbas}->{complete}->{PositiveVariable} = 0;
+	$attributes->{fbas}->{complete}->{NegativeVariable} = 0;
+	$attributes->{fbas}->{complete}->{Variable} = 0;
+	$rxnvar = $datachannel->{fba}->FBAReactionVariables();
+	for (my $i=0; $i < @{$rxnvar}; $i++) {
+		if ($rxnvar->[$i]->modelreaction_ref() =~ m/(rxn\d+)/) {
+			$classhash->{$1}->{comp} = $rxnvar->[$i]->{class};
+		}
+		$rxnvar->[$i]->{class} =~ s/\sv/V/;
+		$attributes->{fbas}->{complete}->{$rxnvar->[$i]->{class}}++;
+	}
+	$attributes->{gene_count} = @{$datachannel->{fbamodel}->features()};
+	$datachannel->{fbamodel}->ComputePathwayAttributes($classhash);
+	$attributes->{pathways} = $datachannel->{fbamodel}->attributes()->{pathways};
+	foreach my $cpd (keys(%{$auxo_output->{auxotrophy_data}})) {
+		$attributes->{auxotrophy}->{$cpd} = {
+			compound_name => $auxo_output->{auxotrophy_data}->{$cpd}->{name},
+			reactions_required => $auxo_output->{auxotrophy_data}->{$cpd}->{totalrxn},
+			gapfilled_reactions => $auxo_output->{auxotrophy_data}->{$cpd}->{gfrxn},
+			is_auxotrophic => $auxo_output->{auxotrophy_data}->{$cpd}->{auxotrophic}
+		};
+		if ($auxo_output->{auxotrophy_data}->{$cpd}->{auxotrophic} == 1) {
+			$attributes->{auxotroph_count}++;
+		}
+	}
+	$datachannel->{fbamodel}->attributes($attributes);
+
+    try {
+        dump_json( $datachannel->{ fbamodel }, 'fbamodel' );
+    }
+    catch {
+        warn 'Dumping JSON failed: ' . $_;
+    }
+
+	my $wsmeta = $handler->util_save_object($datachannel->{fbamodel},Bio::KBase::utilities::buildref($params->{fbamodel_output_id}.".gapfilled",$params->{workspace}));
+
+    my $string;
+    Bio::KBase::Templater::render_template(
+        '/kb/module/templates/model_characterisation_pipeline.tt',
+        { template_data => $datachannel->{ fbamodel } },
+        \$string,
+    );
+
+    warn 'template rendered! ' . $string;
+
+    Bio::KBase::utilities::print_report_message( {
+        message => $string,
+        append  => 0,
+        html    => 1,
+    } );
+
+	return {
+		new_fbamodel_ref => $datachannel->{fbamodel}->_wsworkspace()."/".$datachannel->{fbamodel}->_wswsid(),
+		new_fba_ref => $datachannel->{fba}->_wsworkspace()."/".$datachannel->{fba}->_wswsid()
+	};
+}
+
+
+sub func_run_model_characterization_pipeline {
 	my ($params,$datachannel) = @_;
 
 	$params = Bio::KBase::utilities::args($params,["workspace","fbamodel_id"],{
@@ -3007,10 +3202,7 @@ sub func_run_model_chacterization_pipeline {
 
     $params->{ fbamodel_output_id } //= $datachannel->{ fbamodel }->id;
 
-    warn 'before func_predict_auxotrophy_from_model: '
-        . Dumper {
-#            datachannel => $datachannel,
-        };
+    warn 'before func_predict_auxotrophy_from_model: ';
 
     my $auxo_output = Bio::KBase::ObjectAPI::functions::func_predict_auxotrophy_from_model( {
         workspace   => $params->{ workspace },
@@ -3052,88 +3244,16 @@ sub func_run_model_chacterization_pipeline {
 
     warn 'before func_run_flux_balance_analysis';
 
-    my $auxo_fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis( {
-        workspace       => $params->{ workspace },
-        fbamodel_id     => $params->{ fbamodel_output_id } . ".gapfilled",
-        fba_output_id   => $params->{ fbamodel_output_id } . ".fba",
-        media_id        => $params->{ fbamodel_output_id } . ".base.auxo_media",
-        fva             => 1,
-        minimize_flux   => 1,
-        max_c_uptake    => 30,
-    }, $datachannel );
-
-    warn 'after func_run_flux_balance_analysis: '
-        . Dumper {
-            attributes      => $attributes,
-            auxo_fba_output => $auxo_fba_output,
-        };
-
-    my @fba_default_zero = qw(
-        Blocked
-        Negative
-        Positive
-        Variable
-        PositiveVariable
-        NegativeVariable
-    );
-
-    my $ref = $datachannel->{ fba }->_reference;
-
-    $attributes->{ fbas }{ auxomedia } = {
-        biomass => $auxo_fba_output->{ objective } + 0,
-        fba_ref => "$ref",
-        ( map { $_ => 0 } @fba_default_zero ),
-    };
-
-    my $auxo_fba_reaction_variables = $datachannel->{ fba }->FBAReactionVariables();
     my $reaction_classes;
 
-    for my $reaction ( @$auxo_fba_reaction_variables ) {
-        my $reaction_class = $reaction->{ class };
-        if ( $reaction->modelreaction_ref =~ m/(rxn\d+)/ ) {
-            $reaction_classes->{ $1 }{ auxo } = $reaction_class;
-        }
-        $reaction_class =~ s/\sv/V/;
-        $attributes->{ fbas }{ auxomedia }{ $reaction_class }++;
-    }
+    integrate_fba_analysis( $params, $datachannel, $attributes, $reaction_classes, 'auxomedia' );
 
     warn 'before func_run_flux_balance_analysis II: '
         . Dumper {
 #            datachannel => $datachannel,
         };
 
-    my $complete_fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis( {
-            workspace     => $params->{ workspace },
-            fbamodel_id   => $params->{ fbamodel_output_id } . ".gapfilled",
-            fba_output_id => $params->{ fbamodel_output_id } . ".fba",
-            fva           => 1,
-            minimize_flux => 1,
-            max_c_uptake  => 30
-    }, $datachannel );
-
-    warn 'after func_run_flux_balance_analysis II: '
-        . Dumper {
-            attributes => $attributes,
-            fba_output => $complete_fba_output,
-        };
-
-    $ref = $datachannel->{ fba }->_reference;
-    $attributes->{ fbas }{ complete } = {
-        biomass => $complete_fba_output->{ objective } + 0,
-        fba_ref => "$ref",
-        ( map { $_ => 0 } @fba_default_zero ),
-    };
-
-    my $complete_fba_reaction_variables = $datachannel->{ fba }->FBAReactionVariables();
-
-    for my $reaction ( @$complete_fba_reaction_variables ) {
-        my $reaction_class = $reaction->{ class };
-        if ( $reaction->modelreaction_ref =~ m/(rxn\d+)/ ) {
-            $reaction_classes->{ $1 }{ comp } = $reaction_class;
-        }
-        $reaction_class =~ s/\sv/V/;
-        $attributes->{ fbas }{ complete }{ $reaction_class }++;
-    }
+    integrate_fba_analysis( $params, $datachannel, $attributes, $reaction_classes );
 
     $datachannel->{ fbamodel }->ComputePathwayAttributes( $reaction_classes );
 
@@ -3158,40 +3278,105 @@ sub func_run_model_chacterization_pipeline {
 
     $datachannel->{ fbamodel }->attributes( $attributes );
 
-    warn 'before print_report_message: '
-        . Dumper {
-            attributes  => $attributes,
-        };
+#     my $string;
+#     Bio::KBase::Templater::render_template(
+#         '/kb/module/templates/model_characterisation_pipeline.tt',
+#         { template_data => $datachannel->{ fbamodel } },
+#         \$string,
+#     );
+#
+#     Bio::KBase::utilities::print_report_message( {
+#         message => $string,
+#         append  => 0,
+#         html    => 1,
+#     } );
+#
+#     warn 'before print_report_message: '
+#         . Dumper {
+#             attributes  => $attributes,
+#             html_string => $string,
+#         };
 
-    my $wsmeta = $handler->util_save_object(
-        $datachannel->{ fbamodel },
-        Bio::KBase::utilities::buildref(
-            $params->{ fbamodel_output_id } . ".gapfilled",
-            $params->{ workspace }
-        )
-    );
+    try {
 
-    #     Bio::KBase::Templater::render_template(
-    #         template    => '',
-    #         data        => $datachannel->{ fbamodel },
-    #
-    #     );
-    Bio::KBase::utilities::print_report_message( {
-        message =>
-            "<p>Model-based characterization of input genome complete. "
-            . "Examine model JSON file attributes values for output.</p>",
-        append  => 0,
-        html    => 1,
-    } );
+        dump_json( $datachannel->{ fbamodel }, 'alt_fbamodel' );
 
-    my $fbamodel = $datachannel->{ fbamodel };
+        my $wsmeta = $handler->util_save_object(
+            $datachannel->{ fbamodel },
+            Bio::KBase::utilities::buildref(
+                $params->{ fbamodel_output_id } . ".gapfilled",
+                $params->{ workspace }
+            )
+        );
+
+    }
+    catch {
+        warn 'unable to save file: ' . $_;
+    };
+
+    my $fbamodel_object = $datachannel->{ fbamodel };
+    my $fba_object      = $datachannel->{ fba };
 
     return {
-        new_fbamodel_ref    => $fbamodel->_wsworkspace . "/" . $fbamodel->_wswsid,
-        new_fba_ref         => $fbamodel->_wsworkspace . "/" . $fbamodel->_wswsid,
+        new_fbamodel_ref    => $fbamodel_object->_wsworkspace . "/" . $fbamodel_object->_wswsid,
+        new_fba_ref         => $fba_object->_wsworkspace . "/" . $fba_object->_wswsid,
     };
 
 }
+
+sub integrate_fba_analysis {
+    my ( $params, $datachannel, $attributes, $reaction_classes, $type ) = @_;
+
+    $type //= 'complete';
+
+    my $fba_params = {
+        workspace     => $params->{ workspace },
+        fbamodel_id   => $params->{ fbamodel_output_id } . ".gapfilled",
+        fba_output_id => $params->{ fbamodel_output_id } . ".fba",
+        fva           => 1,
+        minimize_flux => 1,
+        max_c_uptake  => 30
+    };
+
+    $fba_params->{ media_id } = $params->{ fbamodel_output_id } . ".base.auxo_media"
+        if $type eq 'auxomedia';
+
+    my $fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis(
+        $fba_params, $datachannel
+    );
+
+    my @fba_default_zero = qw(
+        Blocked
+        Negative
+        Positive
+        Variable
+        PositiveVariable
+        NegativeVariable
+    );
+
+    my $ref = $datachannel->{ fba }->_reference;
+    $attributes->{ fbas }{ $type } = {
+        biomass => $fba_output->{ objective } + 0,
+        fba_ref => "$ref",
+        ( map { $_ => 0 } @fba_default_zero ),
+    };
+
+    my $fba_reaction_variables = $datachannel->{ fba }->FBAReactionVariables();
+
+    my $type_abbr = substr $type, 0, 4;
+
+    for my $reaction ( @$fba_reaction_variables ) {
+        my $reaction_class = $reaction->{ class };
+        if ( $reaction->modelreaction_ref =~ m/(rxn\d+)/ ) {
+            $reaction_classes->{ $1 }{ $type_abbr } = $reaction_class;
+        }
+        $reaction_class =~ s/\sv/V/;
+        $attributes->{ fbas }{ $type }{ $reaction_class }++;
+    }
+
+    return;
+}
+
 
 sub func_create_or_edit_media {
 	my ($params) = @_;

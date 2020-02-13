@@ -417,7 +417,13 @@ sub get_object_by_handle {
 
 sub save_object {
 	my ($self,$object,$ref,$params) = @_;
-	my $args = {$ref => {hidden => $params->{hidden},meta => $params->{meta},object => $object}};
+	my $args = {
+	    $ref => {
+	        hidden  => $params->{hidden},
+	        meta    => $params->{meta},
+	        object  => $object,
+	    }
+	};
 	if (defined($params->{hash}) && $params->{hash} == 1) {
 		$args->{$ref}->{hash} = 1;
 		$args->{$ref}->{type} = $params->{type};
@@ -428,6 +434,7 @@ sub save_object {
 
 sub save_objects {
 	my ($self,$refobjhash) = @_;
+
 	my $wsdata;
 	my $output = {};
 	foreach my $ref (keys(%{$refobjhash})) {

@@ -5,16 +5,16 @@ MAINTAINER KBase Developer
 # Insert apt-get instructions here to install
 # any required dependencies for your module.
 
-COPY ./ /kb/module
+COPY ./cpanfile /kb/module/cpanfile
 WORKDIR /kb/module
 RUN cpanm --installdeps .
 
-# COPY ./MFAToolkit /kb/module/MFAToolkit
-# COPY ./Makefile /kb/module/
-# COPY ./data/classifier.txt /kb/module/data/
+COPY ./MFAToolkit /kb/module/MFAToolkit
+COPY ./data/classifier.txt /kb/module/data/
+COPY ./Makefile /kb/module/
 WORKDIR /kb/module
 RUN make deploy-mfatoolkit
-# COPY ./ /kb/module
+COPY ./ /kb/module
 RUN mkdir -p /kb/module/work
 ENV PATH=$PATH:/kb/dev_container/modules/kb_sdk/bin
 

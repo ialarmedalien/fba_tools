@@ -5,11 +5,11 @@
 # Development location: Mathematics and Computer Science Division, Argonne National Lab
 # Date of module creation: 2012-03-26T23:22:35
 ########################################################################
-use strict;
+package Bio::KBase::ObjectAPI::KBaseFBA::FBAModel;
+
 use YAML::XS;
 use File::Temp;
 use Bio::KBase::ObjectAPI::KBaseFBA::DB::FBAModel;
-package Bio::KBase::ObjectAPI::KBaseFBA::FBAModel;
 use Moose;
 use namespace::autoclean;
 use Class::Autouse qw(

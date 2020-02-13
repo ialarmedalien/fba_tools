@@ -19,6 +19,7 @@ This module contains the implementation for the primary methods in KBase for met
 =cut
 
 #BEGIN_HEADER
+use warnings;
 use Bio::KBase::AuthToken;
 use Bio::KBase::ObjectAPI::KBaseStore;
 use Bio::KBase::ObjectAPI::functions;
@@ -65,7 +66,7 @@ sub util_finalize_call {
         message => "<p>" . $report_message . "</p>",
         append  => 1,
         html    => 1,
-    } ) if length $report_message && ! length $report_html;
+    } ) if length $report_message > 0 && length $report_html == 0;
 
     my $report = Bio::KBase::kbaseenv::create_report( {
         workspace_name         => $params->{ workspace },

@@ -207,24 +207,6 @@ if ($start < 15) {
 if ($start < 16) {
 	print "Running test 15:\n";
 
-# 	lives_ok {
-#
-#         my $params = {
-#           fbamodel_id => "Escherichia_coli.mdl.base",
-#           fbamodel_output_id => "Escherichia_coli.mdl",
-#           fbamodel_workspace => "chenry:narrative_1504151898593",
-#           workspace => "chenry:narrative_1504151898593",
-#         };
-#
-#         my $ref = Bio::KBase::utilities::buildref(
-#             $params->{ fbamodel_id }, $params->{ fbamodel_workspace }
-#         );
-#         warn 'ref: ' . Dumper $ref;
-#
-#         my $object = $impl->util_get_object( $ref );
-# 	    say Dumper $object;
-# 	} 'successfully got object!';
-
 	lives_ok{
 		$impl->characterize_genome_metabolism_using_model({
 			workspace => $test_ws,

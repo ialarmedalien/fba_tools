@@ -408,6 +408,7 @@ sub toJSON {
     return $JSON->encode($data);
 }
 
+sub TO_JSON { shift->toJSON( @_ ) }
 =head3 export
 
 Definition:
