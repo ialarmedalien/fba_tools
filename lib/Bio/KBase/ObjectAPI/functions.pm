@@ -3141,7 +3141,7 @@ sub func_run_model_chacterization_pipeline {
     }
     catch {
         warn 'Dumping JSON failed: ' . $_;
-    }
+    };
 
 	my $wsmeta = $handler->util_save_object($datachannel->{fbamodel},Bio::KBase::utilities::buildref($params->{fbamodel_output_id}.".gapfilled",$params->{workspace}));
 
