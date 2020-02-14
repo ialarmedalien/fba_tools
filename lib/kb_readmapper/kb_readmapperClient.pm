@@ -35,7 +35,7 @@ A KBase module: kb_readmapper
 sub new
 {
     my($class, $url, @args) = @_;
-    
+
 
     my $self = {
 	client => kb_readmapper::kb_readmapperClient::RpcClient->new,
@@ -109,15 +109,15 @@ sub new
 	        $self->{token} = $token->token;
 	    }
 	}
-	
+
 	if (exists $self->{token})
 	{
 	    $self->{client}->{token} = $self->{token};
 	}
     }
 
-    my $ua = $self->{client}->ua;	 
-    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);	 
+    my $ua = $self->{client}->ua;
+    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);
     $ua->timeout($timeout);
     bless $self, $class;
     #    $self->_validate_version();
@@ -264,8 +264,8 @@ sub _readmapper_submit {
     }
 }
 
- 
- 
+
+
 sub status
 {
     my($self, @args) = @_;
@@ -312,7 +312,7 @@ sub status
         }
     }
 }
-   
+
 
 sub version {
     my ($self) = @_;
@@ -404,87 +404,7 @@ file_name has a value which is a string
 =cut
 
 package kb_readmapper::kb_readmapperClient::RpcClient;
-use base 'JSON::RPC::Client';
-use POSIX;
-use strict;
 
-#
-# Override JSON::RPC::Client::call because it doesn't handle error returns properly.
-#
-
-sub call {
-    my ($self, $uri, $headers, $obj) = @_;
-    my $result;
-
-
-    {
-	if ($uri =~ /\?/) {
-	    $result = $self->_get($uri);
-	}
-	else {
-	    Carp::croak "not hashref." unless (ref $obj eq 'HASH');
-	    $result = $self->_post($uri, $headers, $obj);
-	}
-
-    }
-
-    my $service = $obj->{method} =~ /^system\./ if ( $obj );
-
-    $self->status_line($result->status_line);
-
-    if ($result->is_success) {
-
-        return unless($result->content); # notification?
-
-        if ($service) {
-            return JSON::RPC::ServiceObject->new($result, $self->json);
-        }
-
-        return JSON::RPC::ReturnObject->new($result, $self->json);
-    }
-    elsif ($result->content_type eq 'application/json')
-    {
-        return JSON::RPC::ReturnObject->new($result, $self->json);
-    }
-    else {
-        return;
-    }
-}
-
-
-sub _post {
-    my ($self, $uri, $headers, $obj) = @_;
-    my $json = $self->json;
-
-    $obj->{version} ||= $self->{version} || '1.1';
-
-    if ($obj->{version} eq '1.0') {
-        delete $obj->{version};
-        if (exists $obj->{id}) {
-            $self->id($obj->{id}) if ($obj->{id}); # if undef, it is notification.
-        }
-        else {
-            $obj->{id} = $self->id || ($self->id('JSON::RPC::Client'));
-        }
-    }
-    else {
-        # $obj->{id} = $self->id if (defined $self->id);
-	# Assign a random number to the id if one hasn't been set
-	$obj->{id} = (defined $self->id) ? $self->id : substr(rand(),2);
-    }
-
-    my $content = $json->encode($obj);
-
-    $self->ua->post(
-        $uri,
-        Content_Type   => $self->{content_type},
-        Content        => $content,
-        Accept         => 'application/json',
-	@$headers,
-	($self->{token} ? (Authorization => $self->{token}) : ()),
-    );
-}
-
-
+use base 'Bio::KBase::JSONRPCClient';
 
 1;
