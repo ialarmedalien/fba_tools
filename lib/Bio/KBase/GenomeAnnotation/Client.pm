@@ -30,7 +30,7 @@ formation about an existing genome, or to create new annotations.
 sub new
 {
     my($class, $url, @args) = @_;
-    
+
     if (!defined($url))
     {
 	$url = 'https://kbase.us/services/genome_annotation';
@@ -48,7 +48,7 @@ sub new
 
     {
 	my $token = Bio::KBase::AuthToken->new(@args);
-	
+
 	if (!$token->error_message)
 	{
 	    $self->{token} = $token->token;
@@ -56,8 +56,8 @@ sub new
 	}
     }
 
-    my $ua = $self->{client}->ua;	 
-    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);	 
+    my $ua = $self->{client}->ua;
+    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);
     $ua->timeout($timeout);
     bless $self, $class;
     #    $self->_validate_version();
@@ -11764,7 +11764,7 @@ weighted_hit_count has a value which is a float
 
 =item Description
 
-A feature object represents a feature on the genome. It contains 
+A feature object represents a feature on the genome. It contains
 the location on the contig with a type, the translation if it
 represents a protein, associated aliases, etc. It also contains
 information gathered during the annotation process that is involved
@@ -12884,6 +12884,12 @@ details has a value which is a reference to a list where each element is a pipel
 =cut
 
 package Bio::KBase::GenomeAnnotation::Client::RpcClient;
+
+use parent 'Bio::KBase::JSONRPCClient';
+
+1;
+
+=cut
 use base 'JSON::RPC::Client';
 
 #

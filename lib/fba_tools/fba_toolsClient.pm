@@ -35,7 +35,7 @@ This module contains the implementation for the primary methods in KBase for met
 sub new
 {
     my($class, $url, @args) = @_;
-    
+
 
     my $self = {
 	client => fba_tools::fba_toolsClient::RpcClient->new,
@@ -91,15 +91,15 @@ sub new
 	        $self->{token} = $token->token;
 	    }
 	}
-	
+
 	if (exists $self->{token})
 	{
 	    $self->{client}->{token} = $self->{token};
 	}
     }
 
-    my $ua = $self->{client}->ua;	 
-    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);	 
+    my $ua = $self->{client}->ua;
+    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);
     $ua->timeout($timeout);
     bless $self, $class;
     #    $self->_validate_version();
@@ -268,7 +268,7 @@ Build a genome-scale metabolic model based on annotations in an input genome typ
 				       );
     }
 }
- 
+
 
 
 =head2 characterize_genome_metabolism_using_model
@@ -390,7 +390,7 @@ Builds a model and characterizes an input genome using the model
 				       );
     }
 }
- 
+
 
 
 =head2 run_model_characterization
@@ -496,7 +496,7 @@ Builds a model and characterizes an input genome using the model
 				       );
     }
 }
- 
+
 
 
 =head2 build_plant_metabolic_model
@@ -606,7 +606,7 @@ Build a genome-scale metabolic model based on annotations in an input genome typ
 				       );
     }
 }
- 
+
 
 
 =head2 build_multiple_metabolic_models
@@ -766,7 +766,7 @@ Build multiple genome-scale metabolic models based on annotations in an input ge
 				       );
     }
 }
- 
+
 
 
 =head2 gapfill_metabolic_model
@@ -930,7 +930,7 @@ Gapfills a metabolic model to induce flux in a specified reaction
 				       );
     }
 }
- 
+
 
 
 =head2 run_flux_balance_analysis
@@ -1112,7 +1112,7 @@ Run flux balance analysis and return ID of FBA object with results
 				       );
     }
 }
- 
+
 
 
 =head2 compare_fba_solutions
@@ -1216,7 +1216,7 @@ Compares multiple FBA solutions and saves comparison as a new object in the work
 				       );
     }
 }
- 
+
 
 
 =head2 lookup_modelseed_ids
@@ -1318,7 +1318,7 @@ Attempts to map peaks in the input metabolomics matrix to compounds in the Model
 				       );
     }
 }
- 
+
 
 
 =head2 propagate_model_to_new_genome
@@ -1480,7 +1480,7 @@ Translate the metabolic model of one organism to another, using a mapping of sim
 				       );
     }
 }
- 
+
 
 
 =head2 simulate_growth_on_phenotype_data
@@ -1620,7 +1620,7 @@ Use Flux Balance Analysis (FBA) to simulate multiple growth phenotypes.
 				       );
     }
 }
- 
+
 
 
 =head2 merge_metabolic_models_into_community_model
@@ -1726,7 +1726,7 @@ Merge two or more metabolic models into a compartmentalized community model
 				       );
     }
 }
- 
+
 
 
 =head2 view_flux_network
@@ -1826,7 +1826,7 @@ Merge two or more metabolic models into a compartmentalized community model
 				       );
     }
 }
- 
+
 
 
 =head2 compare_flux_with_expression
@@ -1946,7 +1946,7 @@ Merge two or more metabolic models into a compartmentalized community model
 				       );
     }
 }
- 
+
 
 
 =head2 check_model_mass_balance
@@ -2046,7 +2046,7 @@ Identifies reactions in the model that are not mass balanced
 				       );
     }
 }
- 
+
 
 
 =head2 predict_auxotrophy
@@ -2146,7 +2146,7 @@ Identifies reactions in the model that are not mass balanced
 				       );
     }
 }
- 
+
 
 
 =head2 predict_metabolite_biosynthesis_pathway
@@ -2292,7 +2292,7 @@ Identifies reactions in the model that are not mass balanced
 				       );
     }
 }
- 
+
 
 
 =head2 build_metagenome_metabolic_model
@@ -2414,7 +2414,7 @@ Build a genome-scale metabolic model based on annotations in an input genome typ
 				       );
     }
 }
- 
+
 
 
 =head2 fit_exometabolite_data
@@ -2560,7 +2560,7 @@ Gapfills a metabolic model to fit input exometabolite data
 				       );
     }
 }
- 
+
 
 
 =head2 compare_models
@@ -2672,7 +2672,7 @@ Compare models
 				       );
     }
 }
- 
+
 
 
 =head2 edit_metabolic_model
@@ -2794,7 +2794,7 @@ Edit models
 				       );
     }
 }
- 
+
 
 
 =head2 edit_media
@@ -2938,7 +2938,7 @@ Edit models
 				       );
     }
 }
- 
+
 
 
 =head2 excel_file_to_model
@@ -3044,7 +3044,7 @@ WorkspaceRef is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 sbml_file_to_model
@@ -3150,7 +3150,7 @@ WorkspaceRef is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 tsv_file_to_model
@@ -3256,7 +3256,7 @@ WorkspaceRef is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 model_to_excel_file
@@ -3358,7 +3358,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 model_to_sbml_file
@@ -3460,7 +3460,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 model_to_tsv_file
@@ -3568,7 +3568,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_model_as_excel_file
@@ -3658,7 +3658,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_model_as_tsv_file
@@ -3748,7 +3748,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_model_as_sbml_file
@@ -3838,7 +3838,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 fba_to_excel_file
@@ -3936,7 +3936,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 fba_to_tsv_file
@@ -4040,7 +4040,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_fba_as_excel_file
@@ -4130,7 +4130,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_fba_as_tsv_file
@@ -4220,7 +4220,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 tsv_file_to_media
@@ -4320,7 +4320,7 @@ WorkspaceRef is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 excel_file_to_media
@@ -4420,7 +4420,7 @@ WorkspaceRef is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 media_to_tsv_file
@@ -4518,7 +4518,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 media_to_excel_file
@@ -4616,7 +4616,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_media_as_excel_file
@@ -4706,7 +4706,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_media_as_tsv_file
@@ -4796,7 +4796,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 tsv_file_to_phenotype_set
@@ -4898,7 +4898,7 @@ WorkspaceRef is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 phenotype_set_to_tsv_file
@@ -4996,7 +4996,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_phenotype_set_as_tsv_file
@@ -5086,7 +5086,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 phenotype_simulation_set_to_excel_file
@@ -5184,7 +5184,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 phenotype_simulation_set_to_tsv_file
@@ -5282,7 +5282,7 @@ File is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_phenotype_simulation_set_as_excel_file
@@ -5372,7 +5372,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 export_phenotype_simulation_set_as_tsv_file
@@ -5462,7 +5462,7 @@ ExportOutput is a reference to a hash where the following keys are defined:
 				       );
     }
 }
- 
+
 
 
 =head2 bulk_export_objects
@@ -5584,7 +5584,7 @@ ws_report_id is a string
 				       );
     }
 }
- 
+
 
 
 =head2 run_fba_tools_tests
@@ -5684,8 +5684,8 @@ ws_report_id is a string
 				       );
     }
 }
- 
-  
+
+
 sub status
 {
     my($self, @args) = @_;
@@ -5715,7 +5715,7 @@ sub status
                        );
     }
 }
-   
+
 
 sub version {
     my ($self) = @_;
@@ -9112,6 +9112,13 @@ ref has a value which is a string
 =cut
 
 package fba_tools::fba_toolsClient::RpcClient;
+
+use parent 'Bio::KBase::JSONRPCClient';
+
+1;
+
+=cut
+
 use base 'JSON::RPC::Client';
 use POSIX;
 use strict;

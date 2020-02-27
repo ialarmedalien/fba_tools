@@ -3,7 +3,7 @@
 # Authors: Christopher Henry
 ########################################################################
 
-=head1 Bio::KBase::ObjectAPI::FileStore 
+=head1 Bio::KBase::ObjectAPI::FileStore
 
 A class for managing object storage an retrievel from local file system
 
@@ -12,6 +12,7 @@ A class for managing object storage an retrievel from local file system
 package Bio::KBase::ObjectAPI::FileStore;
 use Moose;
 use Bio::KBase::ObjectAPI::utilities;
+use Bio::KBase::Context;
 
 use Class::Autouse qw(
 	Bio::KBase::utilities
@@ -104,7 +105,7 @@ sub process_object {
 		$self->cache()->{$ref}->_wsname($name);
 		$self->cache()->{$ref}->_wstype($data->{__type__});
 		$self->cache()->{$ref}->_wsworkspace($folder);
-		$self->cache()->{$ref}->_reference($ref."||");			
+		$self->cache()->{$ref}->_reference($ref."||");
 		if ($data->{__type__} eq "KBaseBiochem::Biochemistry") {
 			$self->cache()->{$ref}->add("compounds",{
 				id => "cpd00000",
@@ -183,7 +184,7 @@ sub save_objects {
 			"ref" => $ref,
 			type => $data->{__type__}
 		};
-		$data->{__provenance__} = Bio::KBase::utilities::provenance();
+		$data->{__provenance__} = Bio::KBase::Context::provenance();
 		if ($folder ne "NULL") {
 			my $directory = Bio::KBase::utilities::conf("FileStore","directory");
 			$directory =~ s/\/+$//;

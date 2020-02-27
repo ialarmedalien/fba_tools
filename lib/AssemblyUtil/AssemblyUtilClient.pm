@@ -35,7 +35,7 @@ AssemblyUtil::AssemblyUtilClient
 sub new
 {
     my($class, $url, @args) = @_;
-    
+
 
     my $self = {
 	client => AssemblyUtil::AssemblyUtilClient::RpcClient->new,
@@ -109,15 +109,15 @@ sub new
 	        $self->{token} = $token->token;
 	    }
 	}
-	
+
 	if (exists $self->{token})
 	{
 	    $self->{client}->{token} = $self->{token};
 	}
     }
 
-    my $ua = $self->{client}->ua;	 
-    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);	 
+    my $ua = $self->{client}->ua;
+    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);
     $ua->timeout($timeout);
     bless $self, $class;
     #    $self->_validate_version();
@@ -275,7 +275,7 @@ sub _get_assembly_as_fasta_submit {
     }
 }
 
- 
+
 
 
 =head2 export_assembly_as_fasta
@@ -384,7 +384,7 @@ sub _export_assembly_as_fasta_submit {
     }
 }
 
- 
+
 
 
 =head2 save_assembly_from_fasta
@@ -507,8 +507,8 @@ sub _save_assembly_from_fasta_submit {
     }
 }
 
- 
- 
+
+
 sub status
 {
     my($self, @args) = @_;
@@ -555,7 +555,7 @@ sub status
         }
     }
 }
-   
+
 
 sub version {
     my ($self) = @_;
@@ -824,6 +824,12 @@ assembly_name has a value which is a string
 =cut
 
 package AssemblyUtil::AssemblyUtilClient::RpcClient;
+
+use parent 'Bio::KBase::JSONRPCClient';
+
+1;
+
+=cut
 use base 'JSON::RPC::Client';
 use POSIX;
 use strict;

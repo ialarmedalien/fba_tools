@@ -9,7 +9,7 @@
 # Date of module creation: 2014-01-4
 ########################################################################
 
-=head1 Bio::KBase::ObjectAPI::PATRICStore 
+=head1 Bio::KBase::ObjectAPI::PATRICStore
 
 Class for managing object retreival from PATRIC workspace
 
@@ -46,6 +46,7 @@ Client or server class for accessing a PATRIC workspace
 package Bio::KBase::ObjectAPI::PATRICStore;
 use Moose;
 use Bio::KBase::ObjectAPI::utilities;
+use Bio::KBase::Context;
 use Data::Dumper;
 use Log::Log4perl;
 use LWP::UserAgent;
@@ -177,7 +178,7 @@ sub process_object {
 		my $mdldata = $self->load_model($meta,$data);
 		$meta = $mdldata->[0];
 		$data = $mdldata->[1];
-	}	
+	}
 	#Downloading object from shock if the object is in shock
 	$data = $self->download_object_from_shock($meta,$data);
 	#Writing target object to file cache if they are not already there
@@ -348,19 +349,19 @@ sub save_objects {
 		    	}
 		    	last;
     		}
-    	}	
+    	}
     }
-    return $output; 
+    return $output;
 }
 
 sub upload_to_shock {
-	my ($self,$content,$url) = @_;	
+	my ($self,$content,$url) = @_;
 	my $uuid = Data::UUID->new()->create_str();
 	File::Path::mkpath Bio::KBase::utilities::conf("ModelSEED","fbajobdir");
 	my $filename = Bio::KBase::utilities::conf("ModelSEED","fbajobdir").$uuid;
 	Bio::KBase::ObjectAPI::utilities::PRINTFILE($filename,[$content]);
 	my $ua = LWP::UserAgent->new();
-	my $req = HTTP::Request::Common::POST($url,Authorization => "OAuth ".Bio::KBase::utilities::token(),Content_Type => 'multipart/form-data',Content => [upload => [$filename]]);
+	my $req = HTTP::Request::Common::POST($url,Authorization => "OAuth ".Bio::KBase::Context::token(),Content_Type => 'multipart/form-data',Content => [upload => [$filename]]);
 	$req->method('PUT');
 	my $res = $ua->request($req);
 	Bio::KBase::utilities::log($res->content);
@@ -375,7 +376,7 @@ sub object_from_file {
 	my $data = Bio::KBase::ObjectAPI::utilities::LOADFILE($filename.".data");
 	$data = join("\n",@{$data});
 	$data = Bio::KBase::ObjectAPI::utilities::FROMJSON($data);
-	
+
 	return [$meta,$data];
 }
 
@@ -582,7 +583,7 @@ sub save_model {
 	if (defined($output->{$ref})) {
 		for (my $i=0; $i < @{$output->{$ref}}; $i++) {
 			if ($output->{$ref}->[$i]->[2].$output->{$ref}->[$i]->[0] eq $ref."/fba" && $output->{$ref}->[$i]->[1] eq "folder") {
-				$subobjects->{fba} = 1;	
+				$subobjects->{fba} = 1;
 			} elsif ($output->{$ref}->[$i]->[2].$output->{$ref}->[$i]->[0] eq $ref."/gapfilling" && $output->{$ref}->[$i]->[1] eq "folder") {
 				$subobjects->{gapfill} = 1;
 			} elsif ($output->{$ref}->[$i]->[2].$output->{$ref}->[$i]->[0] eq $ref."/genome" && $output->{$ref}->[$i]->[1] eq "genome") {
@@ -655,7 +656,7 @@ sub save_model {
 			if ($listout->[$i]->[0] eq "model") {
 				$modelmeta = $listout->[$i];
 				$modelmeta->[0] = $refobject;
-				$modelmeta->[2] = $refpath."/";				
+				$modelmeta->[2] = $refpath."/";
 				$object->wsmeta($modelmeta);
 				$object->_reference($ref."||");
 				$self->cache()->{$modelmeta->[2].$modelmeta->[0]} = [$modelmeta,$object];
@@ -668,7 +669,7 @@ sub save_model {
 		    	$self->cache()->{$listout->[$i]->[2].$listout->[$i]->[0]}->[1]->wsmeta($listout->[$i]);
 				$self->cache()->{$listout->[$i]->[2].$listout->[$i]->[0]}->[1]->_reference($listout->[$i]->[2].$listout->[$i]->[0]."||");
 			}
-		}	
+		}
 	}
 	my $summary = $self->helper()->get_model_summary($object);
 	if (Bio::KBase::utilities::conf("ProbModelSEED","old_models") == 1) {
@@ -839,14 +840,14 @@ sub save_fba {
 	    	},
 	    	name => $object->fbamodel()->wsmeta()->[0]."-".$object->media()->wsmeta()->[0]."-essentials"
 	    };
-	    push(@{$createinput->{objects}},["/".Bio::KBase::utilities::user_id()."/home/Feature Groups/".$object->fbamodel()->wsmeta()->[0]."-".$object->media()->wsmeta()->[0]."-essentials","string",{
+	    push(@{$createinput->{objects}},["/".Bio::KBase::Context::user_id()."/home/Feature Groups/".$object->fbamodel()->wsmeta()->[0]."-".$object->media()->wsmeta()->[0]."-essentials","string",{
 		   description => "Group of essential genes predicted by metabolic models",
 		   fba => $ref,
 		   objective => $object->objectiveValue(),
 		   media => $mediaref,
 		   model => $modelref
 		},undef]);
-		$objectdata->{"/".Bio::KBase::utilities::user_id()."/home/Feature Groups/".$object->fbamodel()->wsmeta()->[0]."-".$object->media()->wsmeta()->[0]."-essentials"} = Bio::KBase::ObjectAPI::utilities::TOJSON($ftrgroup);
+		$objectdata->{"/".Bio::KBase::Context::user_id()."/home/Feature Groups/".$object->fbamodel()->wsmeta()->[0]."-".$object->media()->wsmeta()->[0]."-essentials"} = Bio::KBase::ObjectAPI::utilities::TOJSON($ftrgroup);
     }
 	#Calling create functions
 	my $createoutput = Bio::ModelSEED::patricenv::call_ws("create",$createinput);
@@ -864,7 +865,7 @@ sub save_fba {
 			$output->{$listout->[$i]->[2].$listout->[$i]->[0]} = $listout->[$i];
 			$fbameta = $listout->[$i];
 			$fbameta->[0] = $refobject;
-			$fbameta->[2] = $refpath."/";				
+			$fbameta->[2] = $refpath."/";
 			$object->wsmeta($fbameta);
 			$object->_reference($ref."||");
 			$self->cache()->{$fbameta->[2].$fbameta->[0]} = [$fbameta,$object];

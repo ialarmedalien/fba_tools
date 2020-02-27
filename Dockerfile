@@ -4,15 +4,15 @@ MAINTAINER KBase Developer
 
 # Insert apt-get instructions here to install
 # any required dependencies for your module.
+WORKDIR /kb/module
 
 COPY ./cpanfile /kb/module/cpanfile
-WORKDIR /kb/module
-RUN cpanm --installdeps .
-
 COPY ./MFAToolkit /kb/module/MFAToolkit
 COPY ./data/classifier.txt /kb/module/data/
 COPY ./Makefile /kb/module/
 RUN make deploy-mfatoolkit
+
+RUN cpanm --installdeps .
 
 COPY ./ /kb/module
 RUN mkdir -p /kb/module/work

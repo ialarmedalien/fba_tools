@@ -1,0 +1,74 @@
+severity = 5
+verbose = %f: [%p] %m at line %l, column %c (Severity %s).\n%d\n
+
+theme = core + pbp + bugs + maintenance + cosmetic + complexity + security + tests
+# + moose
+program-extensions = pl psgi t
+
+[BuiltinFunctions::ProhibitStringySplit]
+severity = 3
+
+[CodeLayout::RequireTrailingCommas]
+severity = 5
+
+[ControlStructures::ProhibitCStyleForLoops]
+severity = 3
+
+[InputOutput::RequireCheckedSyscalls]
+functions = :builtins
+exclude_functions = print say
+
+[RegularExpressions::ProhibitComplexRegexes]
+max_characters = 200
+
+[RegularExpressions::ProhibitUnusualDelimiters]
+severity = 3
+
+[Subroutines::ProhibitUnusedPrivateSubroutines]
+private_name_regex = _(?!build)\w+
+
+[TestingAndDebugging::RequireUseStrict]
+equivalent_modules = Test::Most
+
+[TestingAndDebugging::RequireUseWarnings]
+equivalent_modules = Test::Most
+
+[TestingAndDebugging::ProhibitNoStrict]
+allow = subs refs
+
+
+#we might want to turn this on later
+#[ValuesAndExpressions::ProhibitInterpolationOfLiterals]
+#severity = 3
+
+[ValuesAndExpressions::RequireUpperCaseHeredocTerminator]
+severity = 5
+
+[Variables::ProhibitPackageVars]
+add_packages = Carp Test::Builder
+
+[Variables::ProhibitReusedNames]
+severity = 5
+
+[Variables::ProhibitUnusedVariables]
+severity = 5
+
+[Variables::RequireLocalizedPunctuationVars]
+severity = 5
+
+# Sometimes I want to write "return unless $x > 4"
+[-ControlStructures::ProhibitNegativeExpressionsInUnlessAndUntilConditions]
+
+[-ErrorHandling::RequireCarping]
+
+# No need for /xsm everywhere
+[-RegularExpressions::RequireDotMatchAnything]
+[-RegularExpressions::RequireExtendedFormatting]
+[-RegularExpressions::RequireLineBoundaryMatching]
+
+# http://stackoverflow.com/questions/2275317/why-does-perlcritic-dislike-using-shift-to-populate-subroutine-variables
+[-Subroutines::RequireArgUnpacking]
+
+# "use v5.14" is more readable than "use 5.014"
+[-ValuesAndExpressions::ProhibitVersionStrings]
+[-ValuesAndExpressions::ProhibitEmptyQuotes]

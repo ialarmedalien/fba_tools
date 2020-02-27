@@ -1855,12 +1855,12 @@ sub add_gapfilling {
 		}
 	}
 
-	my $tbl = "<p>During gapfilling, ".$added." new reactions were added to the model, while ".$reversed." existing reactions were made reversible.";
-	if (@{$gfarray} > 0) {
+    my $tbl = "<p>During gapfilling, " . $added . " new reactions were added to the model, while " . $reversed . " existing reactions were made reversible.";
+    if ( @{ $gfarray } > 0 ) {
 		$tbl .= " The reactions added and modified during gapfilling are listed below:</p><br>";
 		$tbl .= "<table class=\"reporttbl\"><tr><th>Reaction</th><th>Direction</th><th>Equation</th><th>Action</th></tr>";
-		foreach my $gfrxn (@{$gfarray}) {
-			$tbl .= "<tr><td>".$gfrxn->{obj}->id()."</td><td>".$gfrxn->{dir}."</td><td>".$gfrxn->{obj}->definition()."</td><td>".$gfrxn->{action}."</td></tr>";
+        foreach my $gfrxn ( @{ $gfarray } ) {
+            $tbl .= "<tr><td>" . $gfrxn->{ obj }->id() . "</td><td>" . $gfrxn->{ dir } . "</td><td>" . $gfrxn->{ obj }->definition() . "</td><td>" . $gfrxn->{ action } . "</td></tr>";
 		}
 		$tbl .= "</table>";
 	} else {

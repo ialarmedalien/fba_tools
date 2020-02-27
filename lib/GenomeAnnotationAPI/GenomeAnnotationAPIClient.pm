@@ -6166,6 +6166,12 @@ info has a value which is a Workspace.object_info
 =cut
 
 package GenomeAnnotationAPI::GenomeAnnotationAPIClient::RpcClient;
+
+use parent 'Bio::KBase::JSONRPCClient';
+
+1;
+
+=cut
 use base 'JSON::RPC::Client';
 use POSIX;
 use strict;

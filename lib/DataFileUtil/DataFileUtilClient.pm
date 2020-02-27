@@ -42,7 +42,7 @@ archiving.
 sub new
 {
     my($class, $url, @args) = @_;
-    
+
 
     my $self = {
 	client => DataFileUtil::DataFileUtilClient::RpcClient->new,
@@ -116,15 +116,15 @@ sub new
 	        $self->{token} = $token->token;
 	    }
 	}
-	
+
 	if (exists $self->{token})
 	{
 	    $self->{client}->{token} = $self->{token};
 	}
     }
 
-    my $ua = $self->{client}->ua;	 
-    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);	 
+    my $ua = $self->{client}->ua;
+    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);
     $ua->timeout($timeout);
     bless $self, $class;
     #    $self->_validate_version();
@@ -288,7 +288,7 @@ sub _shock_to_file_submit {
     }
 }
 
- 
+
 
 
 =head2 shock_to_file_mass
@@ -407,7 +407,7 @@ sub _shock_to_file_mass_submit {
     }
 }
 
- 
+
 
 
 =head2 file_to_shock
@@ -542,7 +542,7 @@ sub _file_to_shock_submit {
     }
 }
 
- 
+
 
 
 =head2 unpack_file
@@ -583,8 +583,8 @@ UnpackFileResult is a reference to a hash where the following keys are defined:
 
 Using the same logic as unpacking a Shock file, this method will cause
 any bzip or gzip files to be uncompressed, and then unpack tar and zip
-archive files (uncompressing gzipped or bzipped archive files if 
-necessary). If the file is an archive, it will be unbundled into the 
+archive files (uncompressing gzipped or bzipped archive files if
+necessary). If the file is an archive, it will be unbundled into the
 directory containing the original output file.
 
 =back
@@ -653,7 +653,7 @@ sub _unpack_file_submit {
     }
 }
 
- 
+
 
 
 =head2 pack_file
@@ -762,7 +762,7 @@ sub _pack_file_submit {
     }
 }
 
- 
+
 
 
 =head2 package_for_download
@@ -877,7 +877,7 @@ sub _package_for_download_submit {
     }
 }
 
- 
+
 
 
 =head2 file_to_shock_mass
@@ -1012,7 +1012,7 @@ sub _file_to_shock_mass_submit {
     }
 }
 
- 
+
 
 
 =head2 copy_shock_node
@@ -1139,7 +1139,7 @@ sub _copy_shock_node_submit {
     }
 }
 
- 
+
 
 
 =head2 own_shock_node
@@ -1277,7 +1277,7 @@ sub _own_shock_node_submit {
     }
 }
 
- 
+
 
 
 =head2 ws_name_to_id
@@ -1376,7 +1376,7 @@ sub _ws_name_to_id_submit {
     }
 }
 
- 
+
 
 
 =head2 save_objects
@@ -1522,7 +1522,7 @@ sub _save_objects_submit {
     }
 }
 
- 
+
 
 
 =head2 get_objects
@@ -1663,7 +1663,7 @@ sub _get_objects_submit {
     }
 }
 
- 
+
 
 
 =head2 versions
@@ -1752,7 +1752,7 @@ sub _versions_submit {
     }
 }
 
- 
+
 
 
 =head2 download_staging_file
@@ -1859,7 +1859,7 @@ sub _download_staging_file_submit {
     }
 }
 
- 
+
 
 
 =head2 download_web_file
@@ -1968,8 +1968,8 @@ sub _download_web_file_submit {
     }
 }
 
- 
- 
+
+
 sub status
 {
     my($self, @args) = @_;
@@ -2016,7 +2016,7 @@ sub status
         }
     }
 }
-   
+
 
 sub version {
     my ($self) = @_;
@@ -2182,7 +2182,7 @@ unpack - either null, 'uncompress', or 'unpack'. 'uncompress' will cause
     'uncompress' is specified and an archive file is encountered, an
     error will be thrown. If the file is an archive, it will be
     unbundled into the directory containing the original output file.
-    
+
     Note that if the file name (either as provided by the user or by
     Shock) without the a decompression extension (e.g. .gz, .zip or
     .tgz -> .tar) points to an existing file and unpack is specified,
@@ -2299,7 +2299,7 @@ pack - compress a file or archive a directory before loading to Shock.
     overwriting an existing file. Attempting to pack the root directory
     is an error. Do not attempt to pack the scratch space root as noted
     in the module description.
-    
+
     The allowed values are:
         gzip - gzip the file given by file_path.
         targz - tar and gzip the directory specified by the directory
@@ -2549,17 +2549,17 @@ file_path has a value which is a string
 Input for the package_for_download function.
 
 Required parameters:
-file_path - the location of the directory to compress as zip archive  
+file_path - the location of the directory to compress as zip archive
     before loading to Shock. This argument will be appended with the
-    '.zip' file extension prior to writing. If it is a directory, file 
-    name of the created archive will be set to the directory name 
-    followed by '.zip', possibly overwriting an existing file. 
+    '.zip' file extension prior to writing. If it is a directory, file
+    name of the created archive will be set to the directory name
+    followed by '.zip', possibly overwriting an existing file.
     Attempting to pack the root directory is an error. Do not attempt
     to pack the scratch space root as noted in the module description.
 ws_ref - list of references to workspace objects which will be used to
     produce info-files in JSON format containing workspace metadata and
-    provenance structures. It produces new files in folder pointed 
-    by file_path (or folder containing file pointed by file_path if 
+    provenance structures. It produces new files in folder pointed
+    by file_path (or folder containing file pointed by file_path if
     it's not folder).
 Optional parameters:
 attributes - user-specified attributes to save to the Shock node along
@@ -2649,7 +2649,7 @@ Input for the copy_shock_node function.
 
        Required parameters:
        shock_id - the id of the node to copy.
-       
+
        Optional parameters:
        make_handle - make a Handle Service handle for the shock node. Default
            false.
@@ -2733,7 +2733,7 @@ Input for the own_shock_node function.
 
        Required parameters:
        shock_id - the id of the node for which the user needs ownership.
-       
+
        Optional parameters:
        make_handle - make or find a Handle Service handle for the shock node.
            Default false.
@@ -2887,7 +2887,7 @@ An object and associated data required for saving.
     type - the workspace type string for the object. Omit the version
         information to use the latest version.
     data - the object data.
-    
+
     Optional parameters:
     One of an object name or id. If no name or id is provided the name
         will be set to 'auto' with the object id appended as a string,
@@ -2951,7 +2951,7 @@ Input parameters for the "save_objects" function.
     Required parameters:
     id - the numerical ID of the workspace.
     objects - the objects to save.
-    
+
     The object provenance is automatically pulled from the SDK runner.
 
 
@@ -2996,7 +2996,7 @@ Input parameters for the "get_objects" function.
         the workspace name or id, Y is the object name or id, and Z is the
         (optional) object version. In general, always use ids rather than
         names if possible to avoid race conditions.
-    
+
     Optional parameters:
     ignore_errors - ignore any errors that occur when fetching an object
         and instead insert a null into the returned list.
@@ -3117,7 +3117,7 @@ Input parameters for the "download_staging_file" function.
 
       Required parameters:
       staging_file_subdir_path: subdirectory file path
-      e.g. 
+      e.g.
         for file: /data/bulk/user_name/file_name
         staging_file_subdir_path is file_name
         for file: /data/bulk/user_name/subdir_1/subdir_2/file_name
@@ -3266,6 +3266,12 @@ copy_file_path has a value which is a string
 =cut
 
 package DataFileUtil::DataFileUtilClient::RpcClient;
+
+use parent 'Bio::KBase::JSONRPCClient';
+
+1;
+
+=cut
 use base 'JSON::RPC::Client';
 use POSIX;
 use strict;

@@ -1,20 +1,19 @@
-use strict;
-use Data::Dumper;
-use Test::More;
-use Test::Exception;
+use Test::Most;
+use Data::Dumper::Concise;
 use Config::Simple;
 use Time::HiRes qw(time);
 use Workspace::WorkspaceClient;
 use fba_tools::fba_toolsImpl;
+use Bio::KBase::Context;
 
 local $| = 1;
+Bio::KBase::Context::create_context_from_client_config();
 my $impl = fba_tools::fba_toolsImpl->new();
-Bio::KBase::kbaseenv::create_context_from_client_config();
 Bio::KBase::ObjectAPI::functions::set_handler($impl);
 my $test_ws = "fba_tools_unittests";
 $test_ws = "chenry:narrative_1504151898593";
 
-my $start = 16;
+my $start = 15;
 if (defined($ARGV[0])) {
 	$start = $ARGV[0];
 }
@@ -207,7 +206,7 @@ if ($start < 16) {
 	lives_ok{
 		$impl->characterize_genome_metabolism_using_model({
 			workspace => $test_ws,
-			genome_id => "Escherichia_coli"
+			genome_id => "Escherichia_coli",
 		});
 	} "characterize_genome_metabolism_using_model";
 }

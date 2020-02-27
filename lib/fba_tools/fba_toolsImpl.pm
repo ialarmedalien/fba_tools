@@ -2,7 +2,7 @@ package fba_tools::fba_toolsImpl;
 use strict;
 use Bio::KBase::Exceptions;
 # Use Semantic Versioning (2.0.0-rc.1)
-# http://semver.org 
+# http://semver.org
 our $VERSION = '1.7.8';
 our $GIT_URL = 'ssh://git@github.com/cshenry/fba_tools.git';
 our $GIT_COMMIT_HASH = '8ac05c39c662be1b2856a8af03f8a6be59581921';
@@ -24,12 +24,15 @@ use Bio::KBase::AuthToken;
 use Bio::KBase::ObjectAPI::KBaseStore;
 use Bio::KBase::ObjectAPI::functions;
 use Bio::KBase::utilities;
+use Bio::KBase::Context;
 use Bio::KBase::kbaseenv;
 use DataFileUtil::DataFileUtilClient;
 use Bio::KBase::HandleService;
 use Archive::Zip;
 use Data::Dumper;
 use Ref::Util qw( is_arrayref is_hashref );
+use Bio::KBase::Logger qw( get_logger );
+
 
 #Initialization function for call
 sub util_initialize_call {
@@ -295,6 +298,11 @@ sub util_parse_excel {
     return $sheets;
 }
 
+sub init_error_message {
+    return 'Environment variables KB_DEPLOYMENT_CONFIG and SDK_CALLBACK_URL'
+        . ' are required to initialize the fba_tools handler';
+}
+
 #END_HEADER
 
 sub new
@@ -304,16 +312,36 @@ sub new
     };
     bless $self, $class;
     #BEGIN_CONSTRUCTOR
-    Bio::KBase::utilities::read_config({
-		filename => $ENV{KB_DEPLOYMENT_CONFIG},
-		service => "fba_tools"
-	});
-    Bio::KBase::utilities::setconf("UtilConfig","call_back_url",$ENV{"SDK_CALLBACK_URL"});
-    if (Bio::KBase::utilities::conf("fba_tools","kbase-endpoint") =~ m/appdev\.kbase\.us/) {
-    		Bio::KBase::utilities::setconf("ModelSEED","ontology_map_workspace","janakakbase:narrative_1550174613022");
+
+    my $error_message = init_error_message();
+
+    Bio::KBase::Exceptions::ArgumentValidationError->throw(
+        error       => $error_message,
+        method_name => 'new'
+    )
+        unless $ENV{ KB_DEPLOYMENT_CONFIG } && $ENV{ SDK_CALLBACK_URL };
+
+    Bio::KBase::utilities::read_config( {
+        filename => $ENV{ KB_DEPLOYMENT_CONFIG },
+        service  => "fba_tools"
+    } );
+
+    Bio::KBase::utilities::setconf(
+        "UtilConfig", "call_back_url",
+        $ENV{ "SDK_CALLBACK_URL" }
+    );
+
+    my $kbase_endpoint = Bio::KBase::utilities::conf( "fba_tools", "kbase-endpoint" );
+
+    if ( $kbase_endpoint && $kbase_endpoint =~ m/appdev\.kbase\.us/ ) {
+        Bio::KBase::utilities::setconf(
+            "ModelSEED", "ontology_map_workspace",
+            "janakakbase:narrative_1550174613022"
+        );
     }
-    Bio::KBase::ObjectAPI::functions::set_handler($self);
-    Bio::KBase::utilities::set_handler($self);
+    Bio::KBase::ObjectAPI::functions::set_handler( $self );
+    Bio::KBase::utilities::set_handler( $self );
+
     #END_CONSTRUCTOR
 
     if ($self->can('_init_instance'))
@@ -1975,7 +2003,7 @@ sub view_flux_network
 	File::Path::mkpath([$path], 1);
 	$zip->writeToFileNamed($path."/NetworkViewer.zip");
     my $file = $path."/NetworkViewer.zip";
-	my $token = Bio::KBase::utilities::token();
+	my $token = Bio::KBase::Context::token();
 	my $url   = Bio::KBase::utilities::conf("fba_tools","shock-url");
 	my $attr  = q('{"file":"reporter"}');
 	my $cmd   = 'curl --connect-timeout 100 -s -X POST -F attributes=@- -F upload=@'.$file." $url/node ";
@@ -5673,7 +5701,7 @@ sub run_fba_tools_tests
 
 
 
-=head2 status 
+=head2 status
 
   $return = $obj->status()
 

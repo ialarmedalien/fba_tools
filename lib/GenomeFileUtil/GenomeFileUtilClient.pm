@@ -35,7 +35,7 @@ GenomeFileUtil::GenomeFileUtilClient
 sub new
 {
     my($class, $url, @args) = @_;
-    
+
 
     my $self = {
 	client => GenomeFileUtil::GenomeFileUtilClient::RpcClient->new,
@@ -109,15 +109,15 @@ sub new
 	        $self->{token} = $token->token;
 	    }
 	}
-	
+
 	if (exists $self->{token})
 	{
 	    $self->{client}->{token} = $self->{token};
 	}
     }
 
-    my $ua = $self->{client}->ua;	 
-    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);	 
+    my $ua = $self->{client}->ua;
+    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);
     $ua->timeout($timeout);
     bless $self, $class;
     #    $self->_validate_version();
@@ -304,7 +304,7 @@ sub _genbank_to_genome_submit {
     }
 }
 
- 
+
 
 
 =head2 genome_to_gff
@@ -421,7 +421,7 @@ sub _genome_to_gff_submit {
     }
 }
 
- 
+
 
 
 =head2 metagenome_to_gff
@@ -538,7 +538,7 @@ sub _metagenome_to_gff_submit {
     }
 }
 
- 
+
 
 
 =head2 genome_to_genbank
@@ -655,7 +655,7 @@ sub _genome_to_genbank_submit {
     }
 }
 
- 
+
 
 
 =head2 genome_features_to_fasta
@@ -772,7 +772,7 @@ sub _genome_features_to_fasta_submit {
     }
 }
 
- 
+
 
 
 =head2 genome_proteins_to_fasta
@@ -887,7 +887,7 @@ sub _genome_proteins_to_fasta_submit {
     }
 }
 
- 
+
 
 
 =head2 export_genome_as_genbank
@@ -994,7 +994,7 @@ sub _export_genome_as_genbank_submit {
     }
 }
 
- 
+
 
 
 =head2 export_genome_as_gff
@@ -1101,7 +1101,7 @@ sub _export_genome_as_gff_submit {
     }
 }
 
- 
+
 
 
 =head2 export_genome_features_protein_to_fasta
@@ -1208,7 +1208,7 @@ sub _export_genome_features_protein_to_fasta_submit {
     }
 }
 
- 
+
 
 
 =head2 fasta_gff_to_genome
@@ -1349,7 +1349,7 @@ sub _fasta_gff_to_genome_submit {
     }
 }
 
- 
+
 
 
 =head2 fasta_gff_to_genome_json
@@ -1486,7 +1486,7 @@ sub _fasta_gff_to_genome_json_submit {
     }
 }
 
- 
+
 
 
 =head2 fasta_gff_to_metagenome
@@ -1619,7 +1619,7 @@ sub _fasta_gff_to_metagenome_submit {
     }
 }
 
- 
+
 
 
 =head2 save_one_genome
@@ -2166,8 +2166,8 @@ sub _save_one_genome_submit {
     }
 }
 
- 
- 
+
+
 sub status
 {
     my($self, @args) = @_;
@@ -2214,7 +2214,7 @@ sub status
         }
     }
 }
-   
+
 
 sub version {
     my ($self) = @_;
@@ -3151,6 +3151,11 @@ info has a value which is a Workspace.object_info
 =cut
 
 package GenomeFileUtil::GenomeFileUtilClient::RpcClient;
+use parent 'Bio::KBase::JSONRPCClient';
+
+1;
+
+=cut
 use base 'JSON::RPC::Client';
 use POSIX;
 use strict;

@@ -35,7 +35,7 @@ Module for a simple WS data object report type.
 sub new
 {
     my($class, $url, @args) = @_;
-    
+
 
     my $self = {
 	client => KBaseReport::KBaseReportClient::RpcClient->new,
@@ -109,15 +109,15 @@ sub new
 	        $self->{token} = $token->token;
 	    }
 	}
-	
+
 	if (exists $self->{token})
 	{
 	    $self->{client}->{token} = $self->{token};
 	}
     }
 
-    my $ua = $self->{client}->ua;	 
-    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);	 
+    my $ua = $self->{client}->ua;
+    my $timeout = $ENV{CDMI_TIMEOUT} || (30 * 60);
     $ua->timeout($timeout);
     bless $self, $class;
     #    $self->_validate_version();
@@ -311,7 +311,7 @@ sub _create_submit {
     }
 }
 
- 
+
 
 
 =head2 create_extended_report
@@ -458,8 +458,8 @@ sub _create_extended_report_submit {
     }
 }
 
- 
- 
+
+
 sub status
 {
     my($self, @args) = @_;
@@ -506,7 +506,7 @@ sub status
         }
     }
 }
-   
+
 
 sub version {
     my ($self) = @_;
@@ -963,6 +963,10 @@ workspace_name has a value which is a string
 =cut
 
 package KBaseReport::KBaseReportClient::RpcClient;
+
+use parent 'Bio::KBase::JSONRPCClient';
+
+=cut
 use base 'JSON::RPC::Client';
 use POSIX;
 use strict;
@@ -1045,5 +1049,5 @@ sub _post {
 }
 
 
-
+=cut
 1;

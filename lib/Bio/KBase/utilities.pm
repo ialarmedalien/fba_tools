@@ -1,17 +1,24 @@
 package Bio::KBase::utilities;
+
 use strict;
 use warnings;
-use Carp qw(cluck);
+
+use Bio::KBase::Logger;
+use Carp qw( cluck confess );
 use Config::Simple;
 use DateTime;
 use Bio::KBase::ObjectAPI::KBaseGenomes::Feature;
+use Data::Dumper::Concise;
+use Ref::Util qw( is_hashref is_arrayref );
+use Bio::KBase::Logger qw( get_logger );
+use Bio::KBase::Context;
+use Bio::KBase::LocalCallContext;
 
 our $reaction_hash;
 our $compound_hash;
 our $pathway_hash;
 our $kegg_hash;
 our $config = undef;
-our $ctx = undef;
 our $timestamp = undef;
 our $debugfile = undef;
 our $reportmessage = undef;
@@ -462,44 +469,136 @@ sub report_html_files {
 	return $reporthtmlfiles;
 }
 
-sub config_hash {
-	return $config;
+=head3 read_config
+
+a general method for reading in service configurations and setting mandatory/optional values
+
+Args: $hashref with keys
+
+    filename    => '/path/to/config/file',
+    service     => 'name_of_service',
+
+Returns:
+    $hashref with configuration data
+
+    dies if service or filename are not specified or there is a problem
+    with the config file
+
+=cut
+
+sub read_config {
+    my ( $args ) = @_;
+
+    $args = Bio::KBase::utilities::args(
+        $args,
+        [],
+        {
+            filename  => $ENV{ KB_DEPLOYMENT_CONFIG },
+            service   => $ENV{ KB_SERVICE_NAME },
+            mandatory => [],
+            optional  => {},
+        }
+    );
+
+    my $service     = $args->{ service }  or error( "No service specified!" );
+    my $config_file = $args->{ filename } or error( "No config file specified!" );
+
+    error( "Specified config file " . $config_file . " doesn't exist!" )
+        unless -e $config_file;
+
+    my $c     = Config::Simple->new();
+
+    get_logger()->info( 'reading config from ' . $config_file );
+
+    $c->read( $config_file );
+    my $hash  = $c->vars();
+    for my $key ( keys %$hash ) {
+        my @array = split /\./, $key, 2;
+        $config->{ $array[ 0 ] }{ $array[ 1 ] } = $hash->{ $key };
+    }
+
+    $config->{ $service } = Bio::KBase::utilities::args(
+        $config->{ $service },
+        $args->{ mandatory },
+        $args->{ optional }
+    );
+
+    $config->{ UtilConfig } = Bio::KBase::utilities::args(
+        $config->{ UtilConfig },
+        [],
+        {
+            fulltrace     => 0,
+            reportimpl    => 0,
+            call_back_url => $ENV{ SDK_CALLBACK_URL },
+            token         => undef
+        }
+    );
+
+    return $config;
 }
 
-#read_config: an all purpose general method for reading in service configurations and setting mandatory/optional values
-sub read_config {
-	my ($args) = @_;
-	$args = Bio::KBase::utilities::args($args,[],{
-		filename => $ENV{KB_DEPLOYMENT_CONFIG},
-		service => $ENV{KB_SERVICE_NAME},
-		mandatory => [],
-		optional => {}
-	});
-	if (!defined($args->{service})) {
-		Bio::KBase::utilities::error("No service specified!");
-	}
-	if (!defined($args->{filename})) {
-		Bio::KBase::utilities::error("No config file specified!");
-	}
-	if (!-e $args->{filename}) {
-		Bio::KBase::utilities::error("Specified config file ".$args->{filename}." doesn't exist!");
-	}
-	my $c = Config::Simple->new();
-	$c->read($args->{filename});
-	my $hash = $c->vars();
-	foreach my $key (keys(%{$hash})) {
-		my $array = [split(/\./,$key)];
-		$config->{$array->[0]}->{$array->[1]} = $hash->{$key};
-	}
-	$config->{$args->{service}} = Bio::KBase::utilities::args($config->{$args->{service}},$args->{mandatory},$args->{optional});
-	$config->{UtilConfig} = Bio::KBase::utilities::args($config->{UtilConfig},[],{
-		fulltrace => 0,
-		reportimpl => 0,
-		call_back_url =>  $ENV{ SDK_CALLBACK_URL },
-		token => undef
-	});
-	#print "Loading config file:".$args->{filename}.":\n".Data::Dumper->Dump([$config])."\n";
-	return $config;
+=head3 config_hash
+
+Return the full config data structure
+
+Note that mutating this structure in a function will mutate the original!
+
+=cut
+
+sub config_hash {
+    return $config;
+}
+
+=head3 utilconf
+
+Return config values within the UtilConfig section. Equivalent to running
+
+conf( 'UtilConfig', $value )
+
+=cut
+
+sub utilconf {
+    return conf( "UtilConfig", @_ );
+}
+
+=head3 conf
+
+Returns config values, given a service and the variable name to fetch
+
+Note that this will auto-vivify $service if it doesn't exist in $config
+
+Args: $service, $variable_name_to_fetch
+
+Returns: value of $variable_name_to_fetch or undef
+
+=cut
+
+sub conf {
+    my ( $service, $var ) = @_;
+
+    $config //= read_config();
+
+    return $config->{ $service }{ $var };
+}
+
+=head3 setconf
+
+Given a service, variable name, and value, sets the value, creating it if necessary.
+
+Args: $service, $variable_name, $new_value
+
+Returns: 1 (Perl true value)
+
+=cut
+
+sub setconf {
+    my ( $service, $var, $value ) = @_;
+
+    $config //= read_config();
+
+    $config->{ $service }{ $var } = $value;
+
+    return 1;
 }
 
 sub buildref {
@@ -585,78 +684,96 @@ sub parse_input_table {
 	return $objects;
 }
 
-#args: a function for validating argument hashes that checks for mandatory keys and sets default values on optional keys
+=head3 args
+
+validate argument hashes, checking for mandatory keys and setting default values
+on optional keys
+
+Args:
+
+    $args                   # hashref of arguments
+
+    $mandatoryArguments     # arrayref of args that must be present in $args
+
+    $optionalArguments      # if key is not present in $args, the value will be
+                            # filled in from $optionalArguments
+
+    $substitutions          # inserts the key into $args; if the value is present
+                            # in $args, $args->{ value } is inserted as the value;
+                            # otherwise, the value is undef. See code for
+                            # clarification.
+
+Returns:
+
+    $args                   # hashref
+
+    or dies with an appropriate error message
+
+=cut
+
 sub args {
-	my ($args,$mandatoryArguments,$optionalArguments,$substitutions) = @_;
-	if (!defined($args)) {
-	    $args = {};
-	}
-	if (ref($args) ne "HASH") {
-		Bio::KBase::utilities::error("Arguments not hash");
-	}
-	if (defined($substitutions) && ref($substitutions) eq "HASH") {
-		foreach my $original (keys(%{$substitutions})) {
-			$args->{$original} = $args->{$substitutions->{$original}};
-		}
-	}
-	if (defined($mandatoryArguments)) {
-		my $mandatorylist;
-		for (my $i=0; $i < @{$mandatoryArguments}; $i++) {
-			if (!defined($args->{$mandatoryArguments->[$i]})) {
-				push(@{$mandatorylist},$mandatoryArguments->[$i]);
-			}
-		}
-		if (defined($mandatorylist)) {
-			Bio::KBase::utilities::error("Mandatory arguments missing ".join("; ",@{$mandatorylist}));
-		}
-	}
-	if (defined($optionalArguments)) {
-		foreach my $argument (keys(%{$optionalArguments})) {
-			if (!defined($args->{$argument})) {
-				$args->{$argument} = $optionalArguments->{$argument};
-			}
-		}
-	}
-	return $args;
-}
+    my ( $args, $mandatory_args, $optional_args, $substitutions ) = @_;
 
-#utilconf: returns values for configurations specifically relating to these utility functions
-sub utilconf {
-	my ($var) = @_;
-	return Bio::KBase::utilities::conf("UtilConfig",$var);
-}
+    $args //= {};
+    Bio::KBase::utilities::error( "Arguments must be a hashref" )
+        unless is_hashref $args;
 
-#setconf: sets the value of a specific config parameter
-sub setconf {
-	my ($serv,$var,$value) = @_;
-	if (!defined($config)) {
-		Bio::KBase::utilities::read_config();
-	}
-	$config->{$serv}->{$var} = $value;
-}
+    $mandatory_args //= [];
+    Bio::KBase::utilities::error( "Mandatory arguments must be an arrayref" )
+        unless is_arrayref $mandatory_args;
 
-#conf: returns values for all service configurations
-sub conf {
-	my ($serv,$var) = @_;
-	if (!defined($config)) {
-		Bio::KBase::utilities::read_config();
-	}
-	return $config->{$serv}->{$var};
-}
+    $optional_args //= {};
+    Bio::KBase::utilities::error( "Optional arguments must be a hashref" )
+        unless is_hashref $optional_args;
 
-#error: prints an error message
-sub error {
-	my ($message) = @_;
-    if (defined($config) && Bio::KBase::utilities::utilconf("fulltrace") == 1) {
-		Carp::confess($message);
-    } else {
-    	die $message;
+    $substitutions //= {};
+    Bio::KBase::utilities::error( "Substitutions must be a hashref" )
+        unless is_hashref $substitutions;
+
+    if ( %$substitutions ) {
+        for my $original ( keys %$substitutions ) {
+            # Note that this looks for $substitutions->{ $original } in $args;
+            # if it does not exist, the value will be set to undef
+            $args->{ $original } = $args->{ $substitutions->{ $original } };
+        }
     }
+
+    if ( @$mandatory_args ) {
+        my @missing_mandatory_args = %$args
+            ? grep { ! $args->{ $_ } } @$mandatory_args
+            : @$mandatory_args;
+
+        if ( @missing_mandatory_args ) {
+            Bio::KBase::utilities::error(
+                "Mandatory arguments missing: "
+                . join "; ", @missing_mandatory_args );
+        }
+    }
+
+    if ( %$optional_args ) {
+        for my $argument ( keys %$optional_args ) {
+            $args->{ $argument } //= $optional_args->{ $argument} ;
+        }
+    }
+    return $args;
+}
+
+# error: dies or confesses with an error message
+sub error {
+    my ( $message ) = @_;
+    if ( $ENV{ HARNESS_ACTIVE }
+        || defined $config && utilconf( "fulltrace" ) ) {
+        confess $message;
+    }
+    else {
+        die $message;
+    }
+
 }
 
 sub debug {
 	my ($message) = @_;
-	if (!defined($debugfile)) {
+	if (!defined($debugfile) ) {
 		open ( $debugfile, ">", Bio::KBase::utilities::utilconf("debugfile"));
 	}
 	print $debugfile $message;
@@ -669,45 +786,6 @@ sub close_debug {
 	}
 }
 
-sub create_context {
-	my($parameters) = @_;
-	$parameters = Bio::KBase::utilities::args($parameters,["token","user"],{
-		method => "unknown",
-		provenance => [],
-		setcontext => 1
-	});
-	my $context = LocalCallContext->new($parameters->{token}, $parameters->{user},$parameters->{provenance},$parameters->{method});
-	if ($parameters->{setcontext} == 1) {
-		Bio::KBase::utilities::set_context($context);
-	}
-	return $context;
-}
-
-sub set_context {
-	my($context) = @_;
-	$ctx = $context;
-}
-
-sub context {
-	return $ctx;
-}
-
-sub token {
-	return $ctx->token();
-}
-
-sub method {
-	return $ctx->method();
-}
-
-sub provenance {
-	return $ctx->provenance();
-}
-
-sub user_id {
-	return $ctx->user_id();
-}
-
 sub timestamp {
 	my ($reset) = @_;
 	if (defined($reset) && $reset == 1) {
@@ -716,46 +794,42 @@ sub timestamp {
 	return $timestamp;
 }
 
-{
-    package LocalCallContext;
-    use strict;
-    sub new {
-        my($class,$token,$user,$provenance,$method) = @_;
-        my $self = {
-            token => $token,
-            user_id => $user,
-            provenance => $provenance,
-            method => $method
-        };
-        return bless $self, $class;
-    }
-    sub user_id {
-        my($self) = @_;
-        return $self->{user_id};
-    }
-    sub token {
-        my($self) = @_;
-        return $self->{token};
-    }
-    sub provenance {
-        my($self) = @_;
-        return $self->{provenance};
-    }
-    sub method {
-        my($self) = @_;
-        return $self->{method};
-    }
-    sub authenticated {
-        return 1;
-    }
-    sub log_debug {
-        my($self,$msg) = @_;
-        print STDERR $msg."\n";
-    }
-    sub log_info {
-        my($self,$msg) = @_;
-        print STDERR $msg."\n";
-    }
+my $context_warning = 'This function is now part of Bio::KBase::Context. '
+    . 'Please update your code.';
+# context functions (duplicated from Bio::KBase::Context)
+sub create_context {
+    get_logger()->warn( $context_warning );
+    return Bio::KBase::Context::create_context( @_ );
+}
+
+sub set_context {
+    get_logger()->warn( $context_warning );
+    return Bio::KBase::Context::set_context( @_ );
+}
+
+sub context {
+    get_logger()->warn( $context_warning );
+    return Bio::KBase::Context::context( @_ );
+}
+
+sub token {
+    get_logger()->warn( $context_warning );
+    return Bio::KBase::Context::token( @_ );
+}
+
+sub method {
+    get_logger()->warn( $context_warning );
+    return Bio::KBase::Context::method( @_ );
+}
+
+sub provenance {
+    get_logger()->warn( $context_warning );
+    return Bio::KBase::Context::provenance( @_ );
+}
+
+sub user_id {
+    get_logger()->warn( $context_warning );
+    return Bio::KBase::Context::user_id( @_ );
 }
 
 sub neutralize_formula {

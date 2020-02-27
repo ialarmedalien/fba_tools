@@ -9,7 +9,7 @@
 # Date of module creation: 2014-01-4
 ########################################################################
 
-=head1 Bio::KBase::ObjectAPI::KBaseStore 
+=head1 Bio::KBase::ObjectAPI::KBaseStore
 
 Class for managing KBase object retreival from KBase
 
@@ -47,7 +47,9 @@ Client or server class for accessing a KBase workspace
 package Bio::KBase::ObjectAPI::KBaseStore;
 use Moose;
 use Bio::KBase::ObjectAPI::utilities;
-use Data::Dumper;
+use Bio::KBase::Context;
+use Ref::Util qw( is_arrayref );
+use Data::Dumper::Concise;
 use Class::Autouse qw(
 	Bio::KBase::kbaseenv
 	Bio::KBase::utilities
@@ -112,7 +114,7 @@ sub is_a_cache_target {
 		return 1;
 	}
 	return 0;
-} 
+}
 
 sub ref_to_identity {
 	my ($self,$ref) = @_;
@@ -423,14 +425,14 @@ sub save_objects {
 	foreach my $ref (keys(%{$refobjhash})) {
 		my $obj = $refobjhash->{$ref};
 		my $objdata = {
-			provenance => Bio::KBase::utilities::provenance()
+			provenance => Bio::KBase::Context::provenance()
 		};
 		if (defined($obj->{hash}) && $obj->{hash} == 1) {
 			$objdata->{type} = $obj->{type};
 			$objdata->{data} = $obj->{object};
 		} else {
 			$objdata->{type} = $obj->{object}->_type();
-			$objdata->{data} = $obj->{object}->serializeToDB();	
+			$objdata->{data} = $obj->{object}->serializeToDB();
 		}
 		if (defined($obj->{hidden})) {
 			$objdata->{hidden} = $obj->{hidden};
@@ -517,7 +519,7 @@ sub save_objects {
 			});
 		} else {
 			$listout = Bio::KBase::kbaseenv::save_objects($input);
-		}		
+		}
 		#Placing output into a hash of references pointing to object infos
 		for (my $i=0; $i < @{$listout}; $i++) {
 			$self->cache()->{$listout->[$i]->[6]."/".$listout->[$i]->[0]."/".$listout->[$i]->[4]} = $refobjhash->{$wsdata->{$ws}->{refs}->[$i]}->{object};

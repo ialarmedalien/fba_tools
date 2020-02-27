@@ -1,15 +1,60 @@
 package Bio::KBase::ObjectAPI::functions;
+use Test::Most;
 use strict;
 use warnings;
+use Try::Tiny;
 use POSIX;
 use Data::Dumper::Concise;
 use Data::UUID;
 use Bio::KBase::utilities;
 use Bio::KBase::constants;
+use Bio::KBase::Context;
 use XML::DOM;
 use Bio::KBase::Templater qw( render_template );
+use JSON::MaybeXS;
 
-our $handler;#Needs: log(string),save_object,get_object
+use Bio::KBase::Logger qw( get_logger );
+
+our $handler;   # Needs: log(string), save_object, get_object
+
+sub dump_file {
+    my ( $data, $name, $suffix ) = @_;
+
+    unless ( defined $data ) {
+        warn 'Nothing to dump!';
+        return;
+    }
+
+    $suffix //= 'txt';
+    $suffix =~ s/^\.+//g;
+
+    my $outfile = '/kb/module/work/' . $name . "." . $suffix;
+
+    open my $out, '>', $outfile or die 'Cannot open ' . $outfile . ' for writing: ' . $!;
+
+    print { $out } $data;
+
+    return;
+
+}
+
+sub dump_json {
+    my ( $data, $name ) = @_;
+
+    my $jsonifier = JSON::MaybeXS->new( utf8 => 1, allow_blessed => 1, convert_blessed => 1 );
+
+    my $json;
+
+    try {
+        $json = $jsonifier->encode( $data );
+    }
+    catch {
+        warn 'JSON encoding error: ' . $_;
+    };
+
+    return dump_file( $json, $name, 'json' );
+
+}
 
 sub set_handler {
 	my ($input_handler) = @_;
@@ -866,14 +911,15 @@ sub func_gapfill_metabolic_model {
 							$mediahash->{$baseid}->minFlux(0.01);
 						}
 					} else {
-						if ($peakdata->{score} > 0) {
+						if ( $peakdata->{ score } && $peakdata->{score} > 0) {
 							$media->add("mediacompounds",{
 								compound_ref => "kbase/default/compounds/id/".$baseid,
 								concentration => 0.001,
 								maxFlux => -0.01,
 								minFlux => -100
 							});
-						} elsif ($peakdata->{score} < 0) {
+						}
+						elsif ($peakdata->{ score } && $peakdata->{score} < 0) {
 							$media->add("mediacompounds",{
 								compound_ref => "kbase/default/compounds/id/".$baseid,
 								concentration => 0.001,
@@ -2715,7 +2761,7 @@ sub func_build_metagenome_metabolic_model {
 		} elsif ($params->{contig_coverage_file} =~ m/^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$/) {
 			my $ua = LWP::UserAgent->new();
 			my $shock_url = Bio::KBase::utilities::conf("fba_tools","shock-url")."/node/".$params->{contig_coverage_file}."?download";
-			my $token = Bio::KBase::utilities::token();
+			my $token = Bio::KBase::Context::token();
 			my $res = $ua->get($shock_url,Authorization => "OAuth " . $token);
 			$lines = [split(/\n/,$res->{_content})];
 		} else {
@@ -2912,255 +2958,445 @@ sub func_build_metagenome_metabolic_model {
 }
 
 sub func_model_based_genome_characterization {
-	my ($params,$datachannel) = @_;
-	$params = Bio::KBase::utilities::args($params,["workspace","genome_id"],{
-		fbamodel_output_id => $params->{genome_id}.".mdl",
-		template_id => "auto",
-		genome_workspace => $params->{workspace},
-		template_workspace => undef,
-		use_annotated_functions => 1,
-        merge_all_annotations => 0,
-        source_ontology_list => [],
-        metagenome_model_id => undef,
-        metagenome_model_workspace => $params->{workspace},
-        coverage_propagation => "mag"
-	});
-	Bio::KBase::ObjectAPI::functions::func_build_metabolic_model({
-		workspace => $params->{workspace},
-		genome_id => $params->{genome_id},
-		fbamodel_output_id => $params->{genome_id}.".basemodel",
-		template_id => $params->{template_id},
-		genome_workspace => $params->{genome_workspace},
-		template_workspace => $params->{template_workspace},
-		gapfill_model => 0,
-		anaerobe => 0,
-		use_annotated_functions => $params->{use_annotated_functions},
-        merge_all_annotations => $params->{merge_all_annotations},
-        source_ontology_list => $params->{source_ontology_list},
-        add_auxotrophy_transporters => 1
-	},$datachannel);
-	return Bio::KBase::ObjectAPI::functions::func_run_model_chacterization_pipeline({
-		workspace => $params->{workspace},
-		fbamodel_id => $params->{genome_id}.".basemodel",
-		fbamodel_output_id => $params->{fbamodel_output_id},
-		metagenome_model_id => $params->{metagenome_model_id},
-		metagenome_model_workspace => $params->{metagenome_model_workspace}
-	},$datachannel);
+
+    my ( $params, $datachannel ) = @_;
+
+    my $logger = get_logger();
+
+    $params = Bio::KBase::utilities::args(
+        $params,
+        [ "workspace", "genome_id" ],
+        {
+            fbamodel_output_id         => $params->{ genome_id } . ".mdl",
+            template_id                => "auto",
+            genome_workspace           => $params->{ workspace },
+            template_workspace         => undef,
+            use_annotated_functions    => 1,
+            merge_all_annotations      => 0,
+            source_ontology_list       => [],
+            metagenome_model_id        => undef,
+            metagenome_model_workspace => $params->{ workspace },
+            coverage_propagation       => "mag"
+        }
+    );
+
+    $logger->info( "before func_build_metabolic_model" );
+
+    func_build_metabolic_model( {
+            workspace                   => $params->{ workspace },
+            genome_id                   => $params->{ genome_id },
+            fbamodel_output_id          => $params->{ genome_id } . ".basemodel",
+            template_id                 => $params->{ template_id },
+            genome_workspace            => $params->{ genome_workspace },
+            template_workspace          => $params->{ template_workspace },
+            gapfill_model               => 0,
+            anaerobe                    => 0,
+            use_annotated_functions     => $params->{ use_annotated_functions },
+            merge_all_annotations       => $params->{ merge_all_annotations },
+            source_ontology_list        => $params->{ source_ontology_list },
+            add_auxotrophy_transporters => 1
+        },
+        $datachannel
+    );
+
+
+    use Storable qw ( dclone );
+    $logger->info( "before func_run_model_chacterization_pipeline" );
+
+    my $alt_params      = dclone $params;
+    my $alt_datachannel = defined $datachannel ? dclone $datachannel : undef;
+
+#     return Bio::KBase::ObjectAPI::functions::func_run_model_chacterization_pipeline( {
+#             workspace                  => $params->{ workspace },
+#             fbamodel_id                => $params->{ genome_id } . ".basemodel",
+#             fbamodel_output_id         => $params->{ fbamodel_output_id },
+#             metagenome_model_id        => $params->{ metagenome_model_id },
+#             metagenome_model_workspace => $params->{ metagenome_model_workspace }
+#         },
+#         $datachannel
+#     );
+
+    my $results     = func_run_model_chacterization_pipeline( {
+            workspace                  => $params->{ workspace },
+            fbamodel_id                => $params->{ genome_id } . ".basemodel",
+            fbamodel_output_id         => $params->{ fbamodel_output_id },
+            metagenome_model_id        => $params->{ metagenome_model_id },
+            metagenome_model_workspace => $params->{ metagenome_model_workspace },
+        },
+        $datachannel
+    );
+
+    my $alt_results = func_run_model_characterization_pipeline( {
+            workspace                  => $params->{ workspace },
+            fbamodel_id                => $params->{ genome_id } . ".basemodel",
+            fbamodel_output_id         => $params->{ fbamodel_output_id },
+            metagenome_model_id        => $params->{ metagenome_model_id },
+            metagenome_model_workspace => $params->{ metagenome_model_workspace },
+        },
+        $alt_datachannel
+    );
+
+    cmp_deeply $results, $alt_results,
+        'results and alt_results are identical'
+        or diag explain {
+            results     => $results,
+            alt_results => $alt_results,
+        };
+
+    cmp_deeply $params, $alt_params, 'params and alt_params are identical',
+        or diag explain {
+            params     => $params,
+            alt_params => $alt_params,
+        };
+
+    cmp_deeply $datachannel, $alt_datachannel,
+        'datachannel has not changed'
+        or diag explain {
+            datachannel     => $datachannel,
+            alt_datachannel => $alt_datachannel,
+        };
+
+    return $results;
+
 }
 
 sub func_run_model_chacterization_pipeline {
-	my ($params,$datachannel) = @_;
-	$params = Bio::KBase::utilities::args($params,["workspace","fbamodel_id"],{
-		fbamodel_workspace => $params->{workspace},
-		fbamodel_output_id => $params->{fbamodel_id},
-		metagenome_model_id => undef,
-		metagenome_model_workspace => $params->{workspace},
-        coverage_propagation => "mag",
-        predict_auxotrophy => 1
-	});
-	#Pulling and stashing original input model for the analysis
-	if (!defined($datachannel->{fbamodel})) {
-		$datachannel->{fbamodel} = $handler->util_get_object(Bio::KBase::utilities::buildref($params->{fbamodel_id},$params->{fbamodel_workspace}));
-	}
-	if (defined($datachannel->{fbamodel}->attributes())) {
-		$datachannel->{fbamodel}->attributes()->{pathways} = {};
-		$datachannel->{fbamodel}->attributes()->{fba} = {};
-		$datachannel->{fbamodel}->attributes()->{auxotrophy} = {};
-	}
-	#Propagating coverage from input metagenome object
-	if (defined($params->{metagenome_model_id})) {
-		my $metamodel = $handler->util_get_object(Bio::KBase::utilities::buildref($params->{metagenome_model_id},$params->{metagenome_model_workspace}));
-		if (!defined($metamodel->contig_coverages())) {
-			print "Input metagenome model does not include coverage information, so coverages cannot be computed for this metagenome assembled genome.\n";	
-		} else {
-			my $covhash = $metamodel->contig_coverages();
-			if ($params->{coverage_propagation} eq "mag") {
-				my $totallength = 0;
-				my $magcoverage = 0;
-				my $assembly_object = $handler->util_get_object(Bio::KBase::utilities::buildref($datachannel->{fbamodel}->genome()->assembly_ref(),$params->{input_workspace}));
-				my $allfound = 1;
-				foreach my $contigid (keys(%{$assembly_object->{contigs}})) {
-					$totallength += $assembly_object->{contigs}->{$contigid}->{"length"};
-					if (defined($covhash->{$contigid})) {
-						$magcoverage += $assembly_object->{contigs}->{$contigid}->{"length"}*$covhash->{$contigid};
-					} else {
-						$allfound = 0;
-					}
-				}
-				if ($allfound == 1) {
-					$magcoverage = $magcoverage/$totallength;
-					my $rxns = $datachannel->{fbamodel}->modelreactions();
-					for (my $i=0; $i < @{$rxns}; $i++) {
-						my $proteins = $rxns->[$i]->modelReactionProteins();
-						my $count = @{$proteins};
-						$rxns->[$i]->coverage($count*$magcoverage);
-					}
-				} else {
-					print "MAG contains one or more contigs that are not included in the metagenome model!\n";
-				}
-			} else {
-				my $ftrs = $datachannel->{fbamodel}->genome()->features();
-				my $gene_coverages = {};
-				my $allfound = 1;
-				for (my $i=0; $i < @{$ftrs}; $i++) {
-					my $contig = $ftrs->[$i]->location()->[0]->[0];
-					if (defined($covhash->{$contig})) {
-						$gene_coverages->{$ftrs->[$i]->id()} = $covhash->{$contig};
-					} else {
-						$allfound = 0;
-					}
-				}
-				if ($allfound == 1) {
-					my $rxns = $datachannel->{fbamodel}->modelreactions();
-					for (my $i=0; $i < @{$rxns}; $i++) {
-						$rxns->[$i]->compute_reaction_coverage_from_gene_coverage($gene_coverages);
-					}
-				} else {
-					print "MAG contains one or more contigs that are not included in the metagenome model!\n";
-				}
-			}
-		}
-	}
-	#Instantiating attribute data
-	my $attributes = {
-		pathways => {},
-		auxotrophy => {},
-		fbas => {},
-		gene_count => 0,
-		auxotroph_count => 0
-	};
-	#Cloning the original model and removing all gapfilled reactions to create a base model
-	my $clone_model = $datachannel->{fbamodel}->cloneObject();
-	$clone_model->parent($datachannel->{fbamodel}->parent());
-	$clone_model->remove_all_gapfilled_reactions();
-	#Computing base ATP and gapfilling attributes : only recomputed if original numbers didn't exist
-	if (!defined($clone_model->attributes()->{base_atp}) || $clone_model->attributes()->{base_atp} == 0) {
-		$clone_model->EnsureProperATPProduction();
-	}
-	$attributes->{base_atp} = $clone_model->attributes()->{base_atp};
-	$attributes->{initial_atp} = $clone_model->attributes()->{initial_atp};
-	$attributes->{base_rejected_reactions} = $clone_model->attributes()->{base_rejected_reactions};
-	$attributes->{core_gapfilling} = $clone_model->attributes()->{core_gapfilling};
-	#Predicting auxotrophy against using just the base model
-	$datachannel->{fbamodel} = $clone_model;
-	my $auxomedia = "Carbon-D-Glucose";
-	my $auxomedia_ws = "KBaseMedia";
-	if ($params->{predict_auxotrophy} == 1) {
-		my $auxo_output = Bio::KBase::ObjectAPI::functions::func_predict_auxotrophy_from_model({
-			workspace => $params->{workspace},
-			fbamodel_id => $params->{fbamodel_output_id},
-		},$datachannel);
-		foreach my $cpd (keys(%{$auxo_output->{auxotrophy_data}})) {
-			$attributes->{auxotrophy}->{$cpd} = {
-				compound_name => $auxo_output->{auxotrophy_data}->{$cpd}->{name},
-				reactions_required => $auxo_output->{auxotrophy_data}->{$cpd}->{totalrxn},
-				gapfilled_reactions => $auxo_output->{auxotrophy_data}->{$cpd}->{gfrxn},
-				is_auxotrophic => $auxo_output->{auxotrophy_data}->{$cpd}->{auxotrophic}
-			};
-			if ($auxo_output->{auxotrophy_data}->{$cpd}->{auxotrophic} == 1) {
-				$attributes->{auxotroph_count}++;
-			}
-		}
-		$auxomedia = $params->{fbamodel_output_id}.".auxo_media";
-		$auxomedia_ws = $params->{workspace};
-	} else {
-		my $baseline_solution = Bio::KBase::ObjectAPI::functions::func_baseline_gapfilling({
-			workspace => "NULL",
-			fbamodel_id => $params->{fbamodel_id},
-		},$datachannel);
-	}
-	$attributes->{baseline_gapfilling} = $datachannel->{fbamodel}->attributes()->{baseline_gapfilling};
-	#This is weird, but now I am clearing the cache because the cloning process seems to corrupt the original model object somehow
-	$datachannel->{fbamodel}->parent()->cache({});
-	#Now gapfilling original model in auxotrophic media
-	$datachannel->{fbamodel} = $handler->util_get_object(Bio::KBase::utilities::buildref($params->{fbamodel_id},$params->{fbamodel_workspace}));
-	if (defined($datachannel->{fbamodel}->attributes())) {
-		$datachannel->{fbamodel}->attributes()->{pathways} = {};
-		$datachannel->{fbamodel}->attributes()->{fba} = {};
-		$datachannel->{fbamodel}->attributes()->{auxotrophy} = {};
-	}
-	Bio::KBase::ObjectAPI::functions::add_auxotrophy_transporters({fbamodel => $datachannel->{fbamodel}});
-	my $gapfill_output = Bio::KBase::ObjectAPI::functions::func_gapfill_metabolic_model({
-		workspace => $params->{workspace},
-		fbamodel_id => $params->{fbamodel_id},
-		media_id => $auxomedia,
-		media_workspace => $auxomedia_ws,
-		fbamodel_output_id => $params->{fbamodel_output_id}
-	},$datachannel);
-	$attributes->{auxotrophy_gapfilling} = $gapfill_output->{number_gapfilled_reactions};
-	my $fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis({
-		workspace => $params->{workspace},
-		fbamodel_id => $params->{fbamodel_output_id},
-		fba_output_id => $params->{fbamodel_output_id}.".fba",
-		media_id => $auxomedia,
-		media_workspace => $auxomedia_ws,
-		fva => 1,
-		minimize_flux => 1,
-		max_c_uptake => 30
-	},$datachannel);
-	$attributes->{fbas}->{auxomedia}->{biomass} = $fba_output->{objective}+0;
-	$attributes->{fbas}->{auxomedia}->{fba_ref} = $datachannel->{fba}->_reference();
-	$attributes->{fbas}->{auxomedia}->{Blocked} = 0;
-	$attributes->{fbas}->{auxomedia}->{Negative} = 0;
-	$attributes->{fbas}->{auxomedia}->{Positive} = 0;
-	$attributes->{fbas}->{auxomedia}->{Variable} = 0;
-	$attributes->{fbas}->{auxomedia}->{PositiveVariable} = 0;
-	$attributes->{fbas}->{auxomedia}->{NegativeVariable} = 0;
-	my $rxnvar = $datachannel->{fba}->FBAReactionVariables();
-	my $classhash = {};
-	for (my $i=0; $i < @{$rxnvar}; $i++) {
-		if ($rxnvar->[$i]->modelreaction_ref() =~ m/(rxn\d+)/) {
-			$classhash->{$1}->{auxo} = $rxnvar->[$i]->{class};
-		}
-		$rxnvar->[$i]->{class} =~ s/\sv/V/;
-		$attributes->{fbas}->{auxomedia}->{$rxnvar->[$i]->{class}}++;
-	}
-	$fba_output = Bio::KBase::ObjectAPI::functions::func_run_flux_balance_analysis({
-		workspace => $params->{workspace},
-		fbamodel_id => $params->{fbamodel_output_id}.".gapfilled",
-		fba_output_id => $params->{fbamodel_output_id}.".fba",
-		fva => 1,
-		minimize_flux => 1,
-		max_c_uptake => 30
-	},$datachannel);
-	$attributes->{fbas}->{complete}->{biomass} = $fba_output->{objective}+0;
-	$attributes->{fbas}->{complete}->{fba_ref} = $datachannel->{fba}->_reference();
-	$attributes->{fbas}->{complete}->{Blocked} = 0;
-	$attributes->{fbas}->{complete}->{Negative} = 0;
-	$attributes->{fbas}->{complete}->{Positive} = 0;
-	$attributes->{fbas}->{complete}->{PositiveVariable} = 0;
-	$attributes->{fbas}->{complete}->{NegativeVariable} = 0;
-	$attributes->{fbas}->{complete}->{Variable} = 0;
-	$rxnvar = $datachannel->{fba}->FBAReactionVariables();
-	for (my $i=0; $i < @{$rxnvar}; $i++) {
-		if ($rxnvar->[$i]->modelreaction_ref() =~ m/(rxn\d+)/) {
-			$classhash->{$1}->{comp} = $rxnvar->[$i]->{class};
-		}
-		$rxnvar->[$i]->{class} =~ s/\sv/V/;
-		$attributes->{fbas}->{complete}->{$rxnvar->[$i]->{class}}++;
-	}
-	$attributes->{gene_count} = @{$datachannel->{fbamodel}->features()};
-	if ($attributes->{gene_count} == 0) {
-		my $mdlrxns = $datachannel->{fbamodel}->modelreactions();
-		foreach my $rxn (@{$mdlrxns}) {
-			if (defined($rxn->gene_count())) {
-				$attributes->{gene_count} += $rxn->gene_count();
-			}
-		}
-	}
-	$datachannel->{fbamodel}->ComputePathwayAttributes($classhash);
-	$attributes->{pathways} = $datachannel->{fbamodel}->attributes()->{pathways};
-	$datachannel->{fbamodel}->attributes($attributes);
-	my $wsmeta = $handler->util_save_object($datachannel->{fbamodel},Bio::KBase::utilities::buildref($params->{fbamodel_output_id},$params->{workspace}));
+
+    my ( $params, $datachannel ) = @_;
+    my $logger = get_logger();
+
+    $params = Bio::KBase::utilities::args(
+        $params,
+        [ "workspace", "fbamodel_id" ],
+        {
+            fbamodel_workspace         => $params->{ workspace },
+            fbamodel_output_id         => $params->{ fbamodel_id },
+            metagenome_model_id        => undef,
+            metagenome_model_workspace => $params->{ workspace },
+            coverage_propagation       => "mag",
+            predict_auxotrophy         => 1,
+        }
+    );
+
+    $logger->info( 'getting FBA model' ) unless defined $datachannel->{ fbamodel };
+
+    #Pulling and stashing original input model for the analysis
+    $datachannel->{ fbamodel } //= $handler->util_get_object(
+            Bio::KBase::utilities::buildref(
+                $params->{ fbamodel_id },
+            $params->{ fbamodel_workspace }
+        )
+    );
+
+    if ( defined $datachannel->{ fbamodel }->attributes() ) {
+        $datachannel->{ fbamodel }->attributes->{ pathways }   = {};
+        $datachannel->{ fbamodel }->attributes->{ fba }        = {};
+        $datachannel->{ fbamodel }->attributes->{ auxotrophy } = {};
+    }
+
+    #Propagating coverage from input metagenome object
+    if ( defined( $params->{ metagenome_model_id } ) ) {
+
+        $logger->info( 'got metagenome data; getting metagenome model' );
+        my $metamodel = $handler->util_get_object(
+            Bio::KBase::utilities::buildref(
+                $params->{ metagenome_model_id },
+                $params->{ metagenome_model_workspace }
+            )
+        );
+
+        if ( !defined( $metamodel->contig_coverages() ) ) {
+            print
+                "Input metagenome model does not include coverage information, so coverages cannot be computed for this metagenome assembled genome.\n";
+
+            $logger->info( 'Input metagenome model does not include coverage information, so coverages cannot be computed for this metagenome assembled genome.' );
+
+        }
+        else {
+
+            $logger->info( 'running coverage stuff' );
+            my $covhash = $metamodel->contig_coverages();
+            if ( $params->{ coverage_propagation } eq "mag" ) {
+                my $totallength     = 0;
+                my $magcoverage     = 0;
+                my $assembly_object = $handler->util_get_object(
+                    Bio::KBase::utilities::buildref(
+                        $datachannel->{ fbamodel }->genome()->assembly_ref(),
+                        $params->{ input_workspace } ) );
+                my $allfound = 1;
+                foreach my $contigid ( keys( %{ $assembly_object->{ contigs } } ) ) {
+                    $totallength
+                        += $assembly_object->{ contigs }->{ $contigid }->{ "length" };
+                    if ( defined( $covhash->{ $contigid } ) ) {
+                        $magcoverage
+                            += $assembly_object->{ contigs }->{ $contigid }->{ "length" }
+                            * $covhash->{ $contigid };
+                    }
+                    else {
+                        $allfound = 0;
+                    }
+                }
+                if ( $allfound == 1 ) {
+                    $magcoverage = $magcoverage / $totallength;
+                    my $rxns = $datachannel->{ fbamodel }->modelreactions();
+                    for ( my $i = 0; $i < @{ $rxns }; $i++ ) {
+                        my $proteins = $rxns->[ $i ]->modelReactionProteins();
+                        my $count    = @{ $proteins };
+                        $rxns->[ $i ]->coverage( $count * $magcoverage );
+                    }
+                }
+                else {
+                    print
+                        "MAG contains one or more contigs that are not included in the metagenome model!\n";
+                }
+            }
+            else {
+                my $ftrs           = $datachannel->{ fbamodel }->genome()->features();
+                my $gene_coverages = {};
+                my $allfound       = 1;
+                for ( my $i = 0; $i < @{ $ftrs }; $i++ ) {
+                    my $contig = $ftrs->[ $i ]->location()->[ 0 ]->[ 0 ];
+                    if ( defined( $covhash->{ $contig } ) ) {
+                        $gene_coverages->{ $ftrs->[ $i ]->id() } = $covhash->{ $contig };
+                    }
+                    else {
+                        $allfound = 0;
+                    }
+                }
+                if ( $allfound == 1 ) {
+                    my $rxns = $datachannel->{ fbamodel }->modelreactions();
+                    for ( my $i = 0; $i < @{ $rxns }; $i++ ) {
+                        $rxns->[ $i ]->compute_reaction_coverage_from_gene_coverage(
+                            $gene_coverages );
+                    }
+                }
+                else {
+                    print
+                        "MAG contains one or more contigs that are not included in the metagenome model!\n";
+                }
+            }
+        }
+    }
+
+    $logger->info( 'instantiating attribute data' );
+
+    #Instantiating attribute data
+    my $attributes = {
+        pathways        => {},
+        auxotrophy      => {},
+        fbas            => {},
+        gene_count      => 0,
+        auxotroph_count => 0
+    };
+
+    #Cloning the original model and removing all gapfilled reactions to create a base model
+    my $clone_model = $datachannel->{ fbamodel }->cloneObject();
+    $clone_model->parent( $datachannel->{ fbamodel }->parent() );
+    $clone_model->remove_all_gapfilled_reactions();
+
+    #Computing base ATP and gapfilling attributes : only recomputed if original numbers didn't exist
+    if ( !defined( $clone_model->attributes()->{ base_atp } )
+        || $clone_model->attributes()->{ base_atp } == 0 )
+    {
+        $clone_model->EnsureProperATPProduction();
+    }
+    $attributes->{ base_atp }    = $clone_model->attributes()->{ base_atp };
+    $attributes->{ initial_atp } = $clone_model->attributes()->{ initial_atp };
+    $attributes->{ base_rejected_reactions }
+        = $clone_model->attributes()->{ base_rejected_reactions };
+    $attributes->{ core_gapfilling } = $clone_model->attributes()->{ core_gapfilling };
+
+    #Predicting auxotrophy against using just the base model
+    $datachannel->{ fbamodel } = $clone_model;
+    my $auxomedia    = "Carbon-D-Glucose";
+    my $auxomedia_ws = "KBaseMedia";
+    if ( $params->{ predict_auxotrophy } == 1 ) {
+        my $auxo_output = func_predict_auxotrophy_from_model( {
+                workspace   => $params->{ workspace },
+                fbamodel_id => $params->{ fbamodel_output_id },
+            },
+            $datachannel
+        );
+
+        for my $cpd ( keys %{ $auxo_output->{ auxotrophy_data } } ) {
+            $attributes->{ auxotrophy }->{ $cpd } = {
+                compound_name => $auxo_output->{ auxotrophy_data }->{ $cpd }->{ name },
+                reactions_required =>
+                    $auxo_output->{ auxotrophy_data }->{ $cpd }->{ totalrxn },
+                gapfilled_reactions =>
+                    $auxo_output->{ auxotrophy_data }->{ $cpd }->{ gfrxn },
+                is_auxotrophic =>
+                    $auxo_output->{ auxotrophy_data }->{ $cpd }->{ auxotrophic } };
+            if ( $auxo_output->{ auxotrophy_data }->{ $cpd }->{ auxotrophic } == 1 ) {
+                $attributes->{ auxotroph_count }++;
+            }
+        }
+        $auxomedia    = $params->{ fbamodel_output_id } . ".auxo_media";
+        $auxomedia_ws = $params->{ workspace };
+    }
+    else {
+        # what happens to $baseline_solution?
+        my $baseline_solution = func_baseline_gapfilling( {
+                workspace   => "NULL",
+                fbamodel_id => $params->{ fbamodel_id },
+            },
+            $datachannel
+        );
+    }
+    $attributes->{ baseline_gapfilling }
+        = $datachannel->{ fbamodel }->attributes()->{ baseline_gapfilling };
+
+    #This is weird, but now I am clearing the cache because the cloning process seems to corrupt the original model object somehow
+    $datachannel->{ fbamodel }->parent()->cache( {} );
+
+    #Now gapfilling original model in auxotrophic media
+    $datachannel->{ fbamodel } = $handler->util_get_object(
+        Bio::KBase::utilities::buildref(
+            $params->{ fbamodel_id },
+            $params->{ fbamodel_workspace }
+        )
+    );
+
+    if ( defined( $datachannel->{ fbamodel }->attributes() ) ) {
+        $datachannel->{ fbamodel }->attributes()->{ pathways }   = {};
+        $datachannel->{ fbamodel }->attributes()->{ fba }        = {};
+        $datachannel->{ fbamodel }->attributes()->{ auxotrophy } = {};
+    }
+
+    $logger->info( 'adding auxotrophy transporters' );
+    add_auxotrophy_transporters( { fbamodel => $datachannel->{ fbamodel } } );
+
+    $logger->info( 'func_gapfill_metabolic_model' );
+    my $gapfill_output = func_gapfill_metabolic_model( {
+            workspace          => $params->{ workspace },
+            fbamodel_id        => $params->{ fbamodel_id },
+            media_id           => $auxomedia,
+            media_workspace    => $auxomedia_ws,
+            fbamodel_output_id => $params->{ fbamodel_output_id }
+        },
+        $datachannel
+    );
+
+    $attributes->{ auxotrophy_gapfilling } = $gapfill_output->{ number_gapfilled_reactions };
+
+    $logger->info( 'func_run_flux_balance_analysis, mark I' );
+
+    my $fba_output = func_run_flux_balance_analysis( {
+            workspace       => $params->{ workspace },
+            fbamodel_id     => $params->{ fbamodel_output_id },
+            fba_output_id   => $params->{ fbamodel_output_id } . ".fba",
+            media_id        => $auxomedia,
+            media_workspace => $auxomedia_ws,
+            fva             => 1,
+            minimize_flux   => 1,
+            max_c_uptake    => 30
+        },
+        $datachannel
+    );
+    $attributes->{ fbas }->{ auxomedia }->{ biomass } = $fba_output->{ objective } + 0;
+    $attributes->{ fbas }->{ auxomedia }->{ fba_ref }
+        = $datachannel->{ fba }->_reference();
+    $attributes->{ fbas }->{ auxomedia }->{ Blocked }          = 0;
+    $attributes->{ fbas }->{ auxomedia }->{ Negative }         = 0;
+    $attributes->{ fbas }->{ auxomedia }->{ Positive }         = 0;
+    $attributes->{ fbas }->{ auxomedia }->{ Variable }         = 0;
+    $attributes->{ fbas }->{ auxomedia }->{ PositiveVariable } = 0;
+    $attributes->{ fbas }->{ auxomedia }->{ NegativeVariable } = 0;
+    my $rxnvar    = $datachannel->{ fba }->FBAReactionVariables();
+    my $classhash = {};
+
+    for ( my $i = 0; $i < @{ $rxnvar }; $i++ ) {
+        if ( $rxnvar->[ $i ]->modelreaction_ref() =~ m/(rxn\d+)/ ) {
+            $classhash->{ $1 }->{ auxo } = $rxnvar->[ $i ]->{ class };
+        }
+        $rxnvar->[ $i ]->{ class } =~ s/\sv/V/;
+        $attributes->{ fbas }->{ auxomedia }->{ $rxnvar->[ $i ]->{ class } }++;
+    }
+
+    $logger->info( 'func_run_flux_balance_analysis, mark II' );
+
+    $fba_output = func_run_flux_balance_analysis( {
+            workspace     => $params->{ workspace },
+            fbamodel_id   => $params->{ fbamodel_output_id } . ".gapfilled",
+            fba_output_id => $params->{ fbamodel_output_id } . ".fba",
+            fva           => 1,
+            minimize_flux => 1,
+            max_c_uptake  => 30
+        },
+        $datachannel
+    );
+    $attributes->{ fbas }->{ complete }->{ biomass } = $fba_output->{ objective } + 0;
+    $attributes->{ fbas }->{ complete }->{ fba_ref }
+        = $datachannel->{ fba }->_reference();
+    $attributes->{ fbas }->{ complete }->{ Blocked }          = 0;
+    $attributes->{ fbas }->{ complete }->{ Negative }         = 0;
+    $attributes->{ fbas }->{ complete }->{ Positive }         = 0;
+    $attributes->{ fbas }->{ complete }->{ PositiveVariable } = 0;
+    $attributes->{ fbas }->{ complete }->{ NegativeVariable } = 0;
+    $attributes->{ fbas }->{ complete }->{ Variable }         = 0;
+    $rxnvar = $datachannel->{ fba }->FBAReactionVariables();
+
+    for ( my $i = 0; $i < @{ $rxnvar }; $i++ ) {
+        if ( $rxnvar->[ $i ]->modelreaction_ref() =~ m/(rxn\d+)/ ) {
+            $classhash->{ $1 }->{ comp } = $rxnvar->[ $i ]->{ class };
+        }
+        $rxnvar->[ $i ]->{ class } =~ s/\sv/V/;
+        $attributes->{ fbas }->{ complete }->{ $rxnvar->[ $i ]->{ class } }++;
+    }
+
+
+    $logger->info( 'calculate them pathways!' );
+
+    $attributes->{ gene_count } = @{ $datachannel->{ fbamodel }->features() };
+    if ( $attributes->{ gene_count } == 0 ) {
+        my $mdlrxns = $datachannel->{ fbamodel }->modelreactions();
+        foreach my $rxn ( @{ $mdlrxns } ) {
+            if ( defined( $rxn->gene_count() ) ) {
+                $attributes->{ gene_count } += $rxn->gene_count();
+            }
+        }
+    }
+    $datachannel->{ fbamodel }->ComputePathwayAttributes( $classhash );
+    $attributes->{ pathways } = $datachannel->{ fbamodel }->attributes()->{ pathways };
+    $datachannel->{ fbamodel }->attributes( $attributes );
+
+    $logger->info( attributes => $attributes );
+
+    dump_json( $datachannel->{ fbamodel }, 'fbamodel' );
+
+    my $wsmeta = $handler->util_save_object(
+        $datachannel->{ fbamodel },
+        Bio::KBase::utilities::buildref(
+            $params->{ fbamodel_output_id },
+            $params->{ workspace }
+        )
+    );
+
+    $logger->info( 'rendering template' );
 
     my $string;
     Bio::KBase::Templater::render_template(
-		Bio::KBase::utilities::conf("fba_tools","model_characterisation_template"),
-        { template_data => $datachannel->{ fbamodel }->serializeToDB() },
+        Bio::KBase::utilities::conf( "fba_tools", "model_characterisation_template" ),
+        { template_data => $datachannel->{ fbamodel } },
         \$string,
     );
 
-	#print "TEMPLATE:".$string."\n\n";
+    $logger->info( template_string => $string );
+
+    #print "TEMPLATE:".$string."\n\n";
+    dump_file( $string, 'html_report' );
+
+    my $second_string;
+    Bio::KBase::Templater::render_template(
+        Bio::KBase::utilities::conf( "fba_tools", "model_characterisation_template" ),
+        { template_data => $datachannel->{ fbamodel }->serializeToDB() },
+        \$second_string,
+    );
+
+    $logger->info( template_string => $second_string );
+
+    #print "TEMPLATE:".$string."\n\n";
+    dump_file( $second_string, 'html_report_from_other_version' );
 
     Bio::KBase::utilities::print_report_message( {
         message => $string,
@@ -3168,11 +3404,17 @@ sub func_run_model_chacterization_pipeline {
         html    => 1,
     } );
 
-	return {
-		new_fbamodel_ref => $datachannel->{fbamodel}->_wswsid()."/".$datachannel->{fbamodel}->_wsobjid()."/".$datachannel->{fbamodel}->_wsversion(),
-		new_fba_ref => $datachannel->{fba}->_wswsid()."/".$datachannel->{fba}->_wsobjid()."/".$datachannel->{fbamodel}->_wsversion()
-	};
+    $logger->info( 'done printing report message' );
+
+    return {
+        new_fbamodel_ref => $datachannel->{ fbamodel }->_wswsid() . "/"
+            . $datachannel->{ fbamodel }->_wsobjid() . "/"
+            . $datachannel->{ fbamodel }->_wsversion(),
+        new_fba_ref => $datachannel->{ fba }->_wswsid() . "/"
+            . $datachannel->{ fba }->_wsobjid() . "/"
+            . $datachannel->{ fbamodel }->_wsversion() };
 }
+
 
 sub func_lookup_modelseed_ids {
 	my ($params) = @_;
@@ -3315,6 +3557,208 @@ sub func_lookup_modelseed_ids {
 	return {
 		new_chemical_abundance_matrix_ref => util_get_ref($wsmeta)
 	};
+}
+
+sub func_run_model_characterization_pipeline {
+	my ($params,$datachannel) = @_;
+
+	$params = Bio::KBase::utilities::args($params,["workspace","fbamodel_id"],{
+		fbamodel_workspace => $params->{workspace},
+		fbamodel_output_id => undef
+	});
+
+    my $logger = get_logger();
+
+    $logger->debug( 'datachannel prior to fbamodel checks: ' );
+    $logger->debug( $datachannel );
+
+    $datachannel->{ fbamodel } //= $handler->util_get_object(
+        Bio::KBase::utilities::buildref(
+            $params->{ fbamodel_id }, $params->{ fbamodel_workspace }
+        )
+    );
+
+    $Data::Dumper::Maxdepth = 4;
+
+    my $attributes = {
+        pathways        => {},
+        auxotrophy      => {},
+        fbas            => {},
+        gene_count      => 0,
+        auxotroph_count => 0,
+    };
+
+    if ( defined $datachannel->{ fbamodel }->attributes->{ base_atp } ) {
+
+        $attributes->{ $_ } = $datachannel->{ fbamodel }->attributes->{ $_ }
+            for qw( base_atp initial_atp base_rejected_reactions core_gapfilling );
+
+    }
+
+    $params->{ fbamodel_output_id } //= $datachannel->{ fbamodel }->id;
+
+    $logger->info( 'before func_predict_auxotrophy_from_model' );
+
+    my $auxo_output = Bio::KBase::ObjectAPI::functions::func_predict_auxotrophy_from_model( {
+        workspace   => $params->{ workspace },
+        fbamodel_id => $params->{ fbamodel_output_id } . ".base",
+    }, $datachannel );
+
+    $logger->info( 'after func_predict_auxotrophy_from_model' );
+
+    $logger->debug( {
+        auxo_output => $auxo_output,
+    } );
+
+    $attributes->{ baseline_gapfilling }
+        = $datachannel->{ fbamodel }->attributes->{ baseline_gapfilling };
+
+    $datachannel->{ fbamodel }->parent()->cache( {} );
+    delete $datachannel->{ fbamodel };
+
+    $logger->info( "before func_gapfill_metabolic_model" );
+    $logger->debug(
+        attributes => $attributes
+    );
+
+    my $gapfill_output = Bio::KBase::ObjectAPI::functions::func_gapfill_metabolic_model( {
+        workspace           => $params->{ workspace },
+        fbamodel_id         => $params->{ fbamodel_output_id } . ".base",
+        media_id            => $params->{ fbamodel_output_id } . ".base.auxo_media",
+        fbamodel_output_id  => $params->{ fbamodel_output_id } . ".gapfilled",
+    }, $datachannel );
+
+    $logger->info( 'after func_gapfill_metabolic_model' );
+
+    $logger->debug( {
+        attributes => $attributes,
+        gapfill    => $gapfill_output,
+    } );
+
+    $attributes->{ auxotrophy_gapfilling } = $gapfill_output->{ number_gapfilled_reactions };
+
+    $logger->info( 'before integrate_fba_analysis I' );
+
+    my $reaction_classes;
+
+    integrate_fba_analysis( $params, $datachannel, $attributes, $reaction_classes, 'auxomedia' );
+
+    $logger->info( 'before integrate_fba_analysis II: ' );
+
+    integrate_fba_analysis( $params, $datachannel, $attributes, $reaction_classes );
+
+    $logger->info( 'computing pathway attributes' );
+
+    $datachannel->{ fbamodel }->ComputePathwayAttributes( $reaction_classes );
+
+    $attributes->{ gene_count } = @{ $datachannel->{ fbamodel }->features };
+    $attributes->{ pathways }   = $datachannel->{ fbamodel }->attributes->{ pathways };
+
+    my $auxotrophy_data = $auxo_output->{ auxotrophy_data };
+
+    for my $cpd ( keys %$auxotrophy_data ) {
+
+        $attributes->{ auxotrophy }{ $cpd } = {
+            compound_name       => $auxotrophy_data->{ $cpd }{ name },
+            reactions_required  => $auxotrophy_data->{ $cpd }{ totalrxn },
+            gapfilled_reactions => $auxotrophy_data->{ $cpd }{ gfrxn },
+            is_auxotrophic      => $auxotrophy_data->{ $cpd }{ auxotrophic },
+        };
+
+        $attributes->{ auxotroph_count }++
+            if $auxotrophy_data->{ $cpd }{ auxotrophic } == 1;
+
+    }
+
+    $datachannel->{ fbamodel }->attributes( $attributes );
+
+    try {
+
+        dump_json( $datachannel->{ fbamodel }, 'alt_fbamodel' );
+
+        my $wsmeta = $handler->util_save_object(
+            $datachannel->{ fbamodel },
+            Bio::KBase::utilities::buildref(
+                $params->{ fbamodel_output_id } . ".gapfilled",
+                $params->{ workspace }
+            )
+        );
+
+    }
+    catch {
+        warn 'unable to save file: ' . $_;
+    };
+
+    my $fbamodel_object = $datachannel->{ fbamodel };
+    my $fba_object      = $datachannel->{ fba };
+
+    return {
+        new_fbamodel_ref    => $fbamodel_object->_wsworkspace . "/" . $fbamodel_object->_wswsid,
+        new_fba_ref         => $fba_object->_wsworkspace . "/" . $fba_object->_wswsid,
+    };
+
+}
+
+sub integrate_fba_analysis {
+    my ( $params, $datachannel, $attributes, $reaction_classes, $type ) = @_;
+
+    $type //= 'complete';
+
+    my $fba_params = {
+        workspace     => $params->{ workspace },
+        fbamodel_id   => $params->{ fbamodel_output_id } . ".gapfilled",
+        fba_output_id => $params->{ fbamodel_output_id } . ".fba",
+        fva           => 1,
+        minimize_flux => 1,
+        max_c_uptake  => 30
+    };
+
+    $fba_params->{ media_id } = $params->{ fbamodel_output_id } . ".base.auxo_media"
+        if $type eq 'auxomedia';
+
+    my $fba_output = func_run_flux_balance_analysis(
+        $fba_params, $datachannel
+    );
+
+    my $logger = get_logger();
+
+    $logger->info( 'after running flux balance analysis' );
+    $logger->debug( { 'fba_out'  => $fba_output} );
+
+    my @fba_default_zero = qw(
+        Blocked
+        Negative
+        Positive
+        Variable
+        PositiveVariable
+        NegativeVariable
+    );
+
+    my $ref = $datachannel->{ fba }->_reference;
+    $attributes->{ fbas }{ $type } = {
+        biomass => $fba_output->{ objective } + 0,
+        fba_ref => "$ref",
+        ( map { $_ => 0 } @fba_default_zero ),
+    };
+
+    $logger->info( 'getting reaction variables' );
+    my $fba_reaction_variables = $datachannel->{ fba }->FBAReactionVariables();
+
+    $logger->debug( { 'fba_rxn_vars' => $fba_reaction_variables } );
+
+
+    my $type_abbr = substr $type, 0, 4;
+
+    for my $reaction ( @$fba_reaction_variables ) {
+        my $reaction_class = $reaction->{ class };
+        if ( $reaction->modelreaction_ref =~ m/(rxn\d+)/ ) {
+            $reaction_classes->{ $1 }{ $type_abbr } = $reaction_class;
+        }
+        $reaction_class =~ s/\sv/V/;
+        $attributes->{ fbas }{ $type }{ $reaction_class }++;
+    }
+
+    return;
 }
 
 sub func_create_or_edit_media {
@@ -4734,8 +5178,7 @@ sub func_importmodel {
 		print("Parseing SBML text\n");
 		$params->{compounds} = [];
 		$params->{reactions} = [];
-		require "XML/DOM.pm";
-		my $parser = new XML::DOM::Parser;
+		my $parser = XML::DOM::Parser->new;
 		my $doc = $parser->parse($params->{sbml});
 		#Parsing compartments
 		my $cmpts = [$doc->getElementsByTagName("compartment")];
@@ -5641,12 +6084,15 @@ sub process_matrix {
 	};
 	for (my $j=0; $j < @{$matrix->{data}->{values}}; $j++) {
 		for (my $i=0; $i < @{$matrix->{data}->{col_ids}}; $i++) {
-			$data->{data}->[$j]->[$i] = $matrix->{data}->{values}->[$j]->[$i];
-			if (!defined($data->{highest}->[$i]) || $data->{highest}->[$i] < abs($matrix->{data}->{values}->[$j]->[$i])) {
-				$data->{highest}->[$i] = $matrix->{data}->{values}->[$j]->[$i];
+		    my $j_i = $matrix->{ data }{ values }[ $j ][ $i ];
+			$data->{data}->[$j]->[$i] = $j_i;
+			next unless $j_i;
+            my $abs_value = abs( $j_i );
+			if (!defined($data->{highest}->[$i]) || $data->{highest}->[$i] < $abs_value) {
+				$data->{highest}->[$i] = $j_i;
 			}
-			if (!defined($data->{lowest}->[$i]) || $data->{lowest}->[$i] > abs($matrix->{data}->{values}->[$j]->[$i])) {
-				$data->{lowest}->[$i] = $matrix->{data}->{values}->[$j]->[$i];
+			if (!defined($data->{lowest}->[$i]) || $data->{lowest}->[$i] > $abs_value) {
+				$data->{lowest}->[$i] = $j_i;
 			}
 		}
 	}
