@@ -21,11 +21,18 @@ jobs:
     - name: checkout git repo
       uses: actions/checkout@v2
         
-    - name: install kb-sdk
+    - name: pull and run docker image
+      run: |
+        docker pull kbase/kb-sdk:develop
+        docker run kbase/kb-sdk:develop genscript > ./bin/kb-sdk
+    
+    - name: change permissions
+      shell: bash
+      run: chmod 755 ./bin/kb-sdk
+    
+    - name: run kb-sdk test
       env:
         PATH: ${{ env.PATH }}:./bin/kb-sdk
         KBASE_TEST_TOKEN: ${{ secrets.KBASE_TEST_TOKEN }}
       shell: bash
-      run: |
-        ./scripts/kb_sdk_prep.sh
-        kb-sdk test
+      run: kb-sdk test
