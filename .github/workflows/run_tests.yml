@@ -28,8 +28,10 @@ jobs:
     
     - name: change permissions
       shell: bash
-      run: chmod 755 ./bin/kb-sdk
-    
+      run: |
+        chmod 755 ./bin/kb-sdk
+        ./bin/kb-sdk version
+      
     - name: run kb-sdk test
       env:
         PATH: ${{ env.PATH }}:./bin/kb-sdk
