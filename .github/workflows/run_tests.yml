@@ -28,13 +28,16 @@ jobs:
     
     - name: change permissions
       shell: bash
+      env:
+        PATH: ${{ env.PATH }}:./bin/
       run: |
         chmod 755 ./bin/kb-sdk
-        ./bin/kb-sdk version
+        kb-sdk version
       
     - name: run kb-sdk test
+      shell: bash
       env:
-        PATH: ${{ env.PATH }}:./bin/kb-sdk
+        PATH: ${{ env.PATH }}:./bin/
         KBASE_TEST_TOKEN: ${{ secrets.KBASE_TEST_TOKEN }}
       shell: bash
-      run: ./bin/kb-sdk test
+      run: kb-sdk test
