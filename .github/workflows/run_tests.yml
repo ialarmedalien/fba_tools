@@ -22,9 +22,14 @@ jobs:
       uses: actions/checkout@v2
         
     - name: pull and run docker image
+      shell: bash
+      env:
+        PATH: ${{ env.PATH }}:./bin/
       run: |
         docker pull kbase/kb-sdk
         docker run kbase/kb-sdk genscript > ./bin/kb-sdk
+        chmod 755 ./bin/kb-sdk
+        kb-sdk version
     
     - name: change permissions
       shell: bash
