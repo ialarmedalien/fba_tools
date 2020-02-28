@@ -39,5 +39,4 @@ jobs:
       env:
         PATH: ${{ env.PATH }}:./bin/
         KBASE_TEST_TOKEN: ${{ secrets.KBASE_TEST_TOKEN }}
-      shell: bash
       run: kb-sdk test
