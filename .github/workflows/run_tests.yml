@@ -27,5 +27,5 @@ jobs:
         KBASE_TEST_TOKEN: ${{ secrets.KBASE_TEST_TOKEN }}
       shell: bash
       run: |
-        sh ./scripts/kb_sdk_prep.sh
+        ./scripts/kb_sdk_prep.sh
         kb-sdk test
