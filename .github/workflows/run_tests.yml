@@ -23,8 +23,8 @@ jobs:
         
     - name: pull and run docker image
       run: |
-        docker pull kbase/kb-sdk:develop
-        docker run kbase/kb-sdk:develop genscript > ./bin/kb-sdk
+        docker pull kbase/kb-sdk
+        docker run kbase/kb-sdk genscript > ./bin/kb-sdk
     
     - name: change permissions
       shell: bash
