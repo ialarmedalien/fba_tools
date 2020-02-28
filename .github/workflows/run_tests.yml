@@ -24,5 +24,6 @@ jobs:
         PATH: ${{ env.PATH }}:./bin/kb-sdk
         KBASE_TEST_TOKEN: ${{ secrets.KBASE_TEST_TOKEN }}
       run: |
-        sh ./scripts/kb_sdk_prep.sh
+        chmod +x scripts/kb_sdk_prep.sh
+        ./scripts/kb_sdk_prep.sh
         kb-sdk test
