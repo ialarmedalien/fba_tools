@@ -1,48 +1,28 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ compile_tests_ext ]
+  pull_request:
+    branches: [ master ]
+
 jobs:
+
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - uses:
-    - name:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag ialarmedalien/fba_tools:$(date +%s)
 
-
-
-_=/usr/bin/env
-CATALINA_HOME=/kb/runtime/tomcat
-HOME=/root
-HOSTNAME=542deaa51758
-JAVA_HOME=/kb/runtime/java
-KB_AUTH_TOKEN=HDBTPEHPV6H64L5G6IQH2YVDTAG4NPOL
-KB_PERL_PATH=/kb/deployment/lib
-KB_RUNTIME=/kb/runtime
-KB_TOP=/kb/deployment
-PATH=/kb/runtime/java/bin:/kb/deployment/bin:/kb/runtime/bin:/kb/deployment/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/kb/dev_container/modules/kb_sdk/bin
-PERL5LIB=/kb/deployment/lib:/kb/deployment/lib/perl5
-PWD=/kb/module
-PYTHONPATH=/kb/deployment/lib:
-R_LIBS=/kb/deployment/lib:
-SDK_CALLBACK_URL=http://198.128.203.81:51866  ## FROM kb-sdk
-SHLVL=1
-TARGET=/kb/deployment
-USER=root
-
-
-_=/usr/bin/env
-CATALINA_HOME=/kb/runtime/tomcat
-HOME=/root
-HOSTNAME=455c8c019b82
-JAVA_HOME=/kb/runtime/java
-KB_AUTH_TOKEN=HDBTPEHPV6H64L5G6IQH2YVDTAG4NPOL
-KB_PERL_PATH=/kb/deployment/lib
-KB_RUNTIME=/kb/runtime
-KB_TOP=/kb/deployment
-PATH=/kb/runtime/java/bin:/kb/deployment/bin:/kb/runtime/bin:/kb/deployment/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/kb/dev_container/modules/kb_sdk/bin
-PERL5LIB=/kb/deployment/lib:/kb/deployment/lib/perl5
-PWD=/kb/module
-PYTHONPATH=/kb/deployment/lib:
-R_LIBS=/kb/deployment/lib:
-SHLVL=1
-TARGET=/kb/deployment
-TERM=xterm
-USER=root
+  install_kbsdk_and_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: install kb-sdk
+      env:
+        PATH: ${{ env.PATH }}:./bin/kb-sdk
+        KBASE_TEST_TOKEN: ${{ secrets.KBASE_TEST_TOKEN }}
+      run: |
+        bash scripts/kb_sdk_prep.sh
+        kb-sdk test
