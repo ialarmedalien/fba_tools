@@ -18,7 +18,9 @@ jobs:
   install_kbsdk_and_test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: checkout git repo
+      uses: actions/checkout@v2
+        
     - name: install kb-sdk
       env:
         PATH: ${{ env.PATH }}:./bin/kb-sdk
