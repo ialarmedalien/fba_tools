@@ -8,22 +8,11 @@ on:
 
 jobs:
 
-#  build:
-#    runs-on: ubuntu-latest
-#    steps:
-#    - uses: actions/checkout@v2
-#    - name: Build the Docker image
-#      run: docker build . --file Dockerfile --tag ialarmedalien/fba_tools:$(date +%s)
-
-  install_kbsdk_and_test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: install kb-sdk
-      env:
-        PATH: ${{ env.PATH }}:./bin/kb-sdk
-        KBASE_TEST_TOKEN: ${{ secrets.KBASE_TEST_TOKEN }}
-      run: |
-        chmod +x ./scripts/kb_sdk_prep.sh
-        ./scripts/kb_sdk_prep.sh
-        kb-sdk test
+ build_test_local:
+   runs-on: ubuntu-latest
+   steps:
+   - uses: actions/checkout@v2
+   - name: Build the Docker image
+     run: docker build . --file Dockerfile --tag test/fba_tools:latest
+   - name: Run tests
+     run: docker run test/fba_tools:latest test
