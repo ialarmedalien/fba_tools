@@ -16,3 +16,24 @@ jobs:
      run: docker build . --file Dockerfile --tag test/fba_tools:latest
    - name: Run tests
      run: docker run test/fba_tools:latest test
+
+  install_kbsdk_and_test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout git repo
+      uses: actions/checkout@v2
+
+    - name: pull and run docker image
+      shell: bash
+      run: |
+        docker pull kbase/kb-sdk
+        docker run kbase/kb-sdk genscript > ./bin/kb-sdk
+
+    - name: make script executable
+      shell: bash
+      run: chmod 755 ./bin/kb-sdk
+
+    - name: run script
+      shell: bash
+      run: ./bin/kb-sdk version
+
