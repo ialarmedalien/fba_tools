@@ -8,15 +8,6 @@ on:
 
 jobs:
 
- build_test_local:
-   runs-on: ubuntu-latest
-   steps:
-   - uses: actions/checkout@v2
-   - name: Build the Docker image
-     run: docker build . --file Dockerfile --tag test/fba_tools:latest
-   - name: Run tests
-     run: docker run test/fba_tools:latest test
-
   install_kbsdk_and_test:
     runs-on: ubuntu-latest
     steps:
@@ -37,3 +28,12 @@ jobs:
       shell: bash
       run: ./bin/kb-sdk version
 
+
+  build_test_local:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag test/fba_tools:latest
+    - name: Run tests
+      run: docker run test/fba_tools:latest test
