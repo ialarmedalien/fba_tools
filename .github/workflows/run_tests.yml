@@ -24,9 +24,9 @@ jobs:
       shell: bash
       run: chmod 755 ./bin/kb-sdk
 
-    - name: run script
+    - name: run test
       shell: bash
-      run: ./bin/kb-sdk version
+      run: ./bin/kb-sdk test
 
 
   build_test_local:
