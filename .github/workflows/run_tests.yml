@@ -18,7 +18,7 @@ jobs:
       shell: bash
       run: |
         docker pull ialarmedalien/kb-sdk:report_args
-        docker run ialarmedalien/kb-sdk genscript > ./bin/kb-sdk
+        docker run ialarmedalien/kb-sdk:report_args genscript > ./bin/kb-sdk
 
     - name: make script executable
       shell: bash
