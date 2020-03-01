@@ -17,8 +17,8 @@ jobs:
     - name: pull and run docker image
       shell: bash
       run: |
-        docker pull kbase/kb-sdk
-        docker run kbase/kb-sdk genscript > ./bin/kb-sdk
+        docker pull ialarmedalien/kb-sdk:report_args
+        docker run ialarmedalien/kb-sdk genscript > ./bin/kb-sdk
 
     - name: make script executable
       shell: bash
