@@ -19,15 +19,8 @@ jobs:
       run: |
         docker pull ialarmedalien/kb-sdk:report_args
         docker run ialarmedalien/kb-sdk:report_args genscript > ./bin/kb-sdk
-
-    - name: make script executable
-      shell: bash
-      run: chmod 755 ./bin/kb-sdk
-
-    - name: run test
-      shell: bash
-      run: ./bin/kb-sdk test
-
+        chmod 755 ./bin/kb-sdk
+        run: ./bin/kb-sdk test
 
   build_test_local:
     runs-on: ubuntu-latest
