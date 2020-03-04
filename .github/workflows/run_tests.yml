@@ -16,6 +16,8 @@ jobs:
 
     - name: pull and run docker image
       shell: bash
+      env:
+        KBASE_TEST_TOKEN: ${{ secrets.KBASE_TEST_TOKEN }}
       run: |
         docker pull ialarmedalien/kb-sdk
         docker run ialarmedalien/kb-sdk genscript > ./bin/kb-sdk
