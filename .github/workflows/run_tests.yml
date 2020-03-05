@@ -25,6 +25,7 @@ jobs:
         # copy ${{secrets.KBASE_TEST_TOKEN }} into a file
         # cat ${{secrets.KBASE_TEST_TOKEN }} > /kb/module/work/token
         ./bin/kb-sdk test
+        ./bin/kb-sdk test
 
   build_test_local:
     runs-on: ubuntu-latest
