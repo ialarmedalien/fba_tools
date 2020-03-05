@@ -8,6 +8,8 @@ my $logger  = get_logger();
 my $test_ws = KBaseTestContext->test_ws();
 my $impl    = KBaseTestContext->init_fba_tools_handler();
 
+# plan skip_all => 'Callback server not available' unless $impl;
+
 subtest 'importing from different file formats' => sub {
 
     lives_ok {
@@ -154,26 +156,26 @@ subtest 'importing from different file formats' => sub {
 
 subtest 'exporting model to different file formats' => sub {
 
-lives_ok {
-    $impl->model_to_excel_file( {
-            input_ref => $test_ws . "/test_model"
-        } )
-}
-'export model as excel';
+    lives_ok {
+        $impl->model_to_excel_file( {
+                input_ref => $test_ws . "/test_model"
+            } )
+    }
+    'export model as excel';
 
-lives_ok {
-    $impl->model_to_sbml_file( {
-            input_ref => $test_ws . "/test_model"
-        } )
-}
-'export model as sbml';
+    lives_ok {
+        $impl->model_to_sbml_file( {
+                input_ref => $test_ws . "/test_model"
+            } )
+    }
+    'export model as sbml';
 
-lives_ok {
-    $impl->model_to_tsv_file( {
-            input_ref => $test_ws . "/test_model"
-        } )
-}
-'export model as tsv';
+    lives_ok {
+        $impl->model_to_tsv_file( {
+                input_ref => $test_ws . "/test_model"
+            } )
+    }
+    'export model as tsv';
 
 };
 

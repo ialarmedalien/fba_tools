@@ -10,4 +10,4 @@ fi
 base_dir=$(cd $script_dir && cd .. && pwd);
 
 cd $base_dir
-$script_dir/run_docker.sh run -v $script_dir/workdir:/kb/module/work -e "SDK_CALLBACK_URL=$1" test/fba_tools:latest test
+$script_dir/run_docker.sh run -v $script_dir/workdir:/kb/module/work -v $base_dir:/kb/module -e "SDK_CALLBACK_URL=$1" test/fba_tools:latest test

@@ -88,7 +88,6 @@ subtest 'initialisation' => sub {
 
 };
 
-
 =cut
 
 subtest 'util_finalize_call' => sub {

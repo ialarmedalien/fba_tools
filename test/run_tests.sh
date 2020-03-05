@@ -12,7 +12,9 @@ export KB_AUTH_TOKEN=`cat /kb/module/work/token`
 export PERL5LIB=$script_dir/../lib:$PERL5LIB
 cd $script_dir/..
 
+env
+
 echo "running perl .t tests"
-prove -I test/lib -lvrm -j9 $script_dir
-echo "running .pl tests"
-prove -I test/lib -lvm --ext pl test
+prove -I test/lib -lvrm $script_dir
+# echo "running .pl tests"
+# prove -I test/lib -lvm --ext pl test

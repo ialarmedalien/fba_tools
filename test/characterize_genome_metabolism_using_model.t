@@ -9,6 +9,8 @@ my $impl    = KBaseTestContext->init_fba_tools_handler();
 
 $logger->debug( 'loaded object API, etc.' ) if $impl;
 
+# plan skip_all => 'Callback server not available' unless $impl;
+
 subtest 'running characterize_genome_metabolism_using_model' => sub {
 
     $logger->debug( 'starting up method tests' );
