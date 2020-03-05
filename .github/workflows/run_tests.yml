@@ -23,7 +23,7 @@ jobs:
         docker run ialarmedalien/kb-sdk genscript > ./bin/kb-sdk
         chmod 755 ./bin/kb-sdk
         # copy ${{secrets.KBASE_TEST_TOKEN }} into a file
-        cat ${{secrets.KBASE_TEST_TOKEN }} > /kb/module/work/token
+        # cat ${{secrets.KBASE_TEST_TOKEN }} > /kb/module/work/token
         ./bin/kb-sdk test
 
   build_test_local:
